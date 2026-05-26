@@ -1,0 +1,2845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"/>
+<title>Eugenix.lab · Pour Over</title>
+
+<!-- ═══ PWA — Progressive Web App ═══ -->
+<link rel="manifest" href="manifest.json"/>
+
+<!-- Theme & chrome UI color -->
+<meta name="theme-color" content="#0e0e0e"/>
+<meta name="msapplication-TileColor" content="#0e0e0e"/>
+
+<!-- Standalone (no URL bar) for Android/iOS -->
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Eugenix"/>
+
+<!-- iOS Home Screen Icon -->
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png"/>
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png"/>
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
+<link rel="shortcut icon" href="icons/icon-192.png"/>
+
+<!-- SEO / App description -->
+<meta name="description" content="Pour Over Coffee Brewing Assistant by Eugenix.lab"/>
+<meta name="application-name" content="Eugenix Pour Over"/>
+<link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Share+Tech+Mono&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0e0e0e; --surface: #141414; --surface2: #1a1a1a; --border: rgba(255,255,255,0.08);
+  --text: #f0ede8; --text-dim: rgba(240,237,232,0.45); --text-muted: rgba(240,237,232,0.18);
+  --accent: #e8c97a; --green: #5ecb8a; --red: #e07070; --blue: #7ec8e8;
+  --purple: #b39ddb; --orange: #f09858;
+  --mono: 'DM Mono', 'Share Tech Mono', monospace; --display: 'Syncopate', sans-serif;
+}
+body { background: var(--bg); min-height: 100vh; margin: 0; padding: 0; font-family: var(--mono); }
+.app { width: 100%; min-height: 100vh; background: var(--surface); display: flex; flex-direction: column; overflow-x: hidden; }
+
+/* ── HEADER ── */
+.header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 12px; background: #0e0e0e; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+.brand-wrap { display: flex; flex-direction: column; align-items: center; }
+.brand { font-family: var(--display); font-size: 12px; letter-spacing: 5px; color: var(--text); font-weight: 700; display: flex; align-items: baseline; gap: 1px; }
+.brand-sub { font-family: var(--mono); font-size: 6.5px; letter-spacing: 2.5px; color: var(--text-muted); margin-top: 3px; }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.icon-btn-hdr { background: none; border: none; cursor: pointer; opacity: 0.6; padding: 4px; display: flex; align-items: center; justify-content: center; }
+.icon-btn-hdr:hover { opacity: 1; }
+
+/* ── BLE ── */
+.ble-banner { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border); transition: background 0.3s; }
+.ble-banner.connected { background: rgba(94,203,138,0.08); }
+.ble-banner.connecting { background: rgba(232,201,122,0.07); }
+.ble-banner.error { background: rgba(224,112,112,0.08); }
+.ble-left { display: flex; align-items: center; gap: 9px; }
+.ble-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: all 0.3s; }
+.ble-dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.ble-dot.blink { animation: blink 0.8s infinite; background: var(--accent); }
+.ble-dot.err { background: var(--red); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.ble-label { font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; color: var(--text-dim); transition: color 0.3s; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ble-label.on { color: var(--green); }
+.ble-label.blink { color: var(--accent); }
+.ble-label.err { color: var(--red); }
+.ble-btn { background: none; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; color: var(--text-dim); font-family: var(--mono); font-size: 9px; letter-spacing: 1px; padding: 4px 12px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.ble-btn:hover { border-color: rgba(255,255,255,0.4); color: var(--text); }
+.ble-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.no-ble-warn { background: rgba(224,112,112,0.1); border-bottom: 1px solid rgba(224,112,112,0.2); padding: 9px 14px; font-family: var(--mono); font-size: 9px; color: var(--red); letter-spacing: 1px; line-height: 1.6; display: none; }
+
+/* ── TAB NAV ── */
+.tab-nav { display: flex; background: #0e0e0e; border-bottom: 1px solid var(--border); }
+.tab-btn { flex: 1; padding: 10px 4px 9px; background: none; border: none; font-family: var(--mono); font-size: 8px; letter-spacing: 2px; color: var(--text-muted); cursor: pointer; position: relative; transition: color 0.2s; }
+.tab-btn.active { color: var(--accent); }
+.tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 20%; right: 20%; height: 1.5px; background: var(--accent); border-radius: 2px; }
+.tab-pane { display: none; flex: 1; flex-direction: column; }
+.tab-pane.active { display: flex; }
+
+/* ══════════════════════════════════════════════
+   TAB 1 — BREW
+══════════════════════════════════════════════ */
+
+/* ── TIMER ── */
+.timer-section { padding: 20px 16px 14px; background: var(--surface2); }
+.timer-row { display: flex; justify-content: center; align-items: center; gap: 6px; margin-bottom: 14px; }
+.digit-circle { width: 56px; height: 68px; border-radius: 30px; border: 1.5px solid rgba(255,255,255,0.55); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 28px; color: var(--text); background: rgba(255,255,255,0.02); user-select: none; }
+.timer-colon { font-family: var(--mono); font-size: 26px; color: rgba(255,255,255,0.5); padding-bottom: 3px; }
+.controls-row { display: flex; align-items: center; justify-content: center; gap: 20px; }
+.icon-btn { width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.03); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+.icon-btn:hover { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.07); }
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.play-active { border-color: rgba(232,201,122,0.5); background: rgba(232,201,122,0.1); }
+.icon-btn.auto-armed { border-color: rgba(232,201,122,0.6); background: rgba(232,201,122,0.1); animation: auto-pulse 1s ease-in-out infinite alternate; }
+.icon-btn.auto-active { border-color: rgba(94,203,138,0.6); background: rgba(94,203,138,0.1); }
+@keyframes auto-pulse { from{box-shadow:0 0 0 0 rgba(232,201,122,0.25)} to{box-shadow:0 0 0 7px rgba(232,201,122,0)} }
+.flow-center { text-align: center; }
+.flow-val { font-family: var(--mono); font-size: 20px; color: var(--text-muted); letter-spacing: 2px; transition: color 0.3s; }
+.flow-val.active { color: var(--accent); }
+.flow-label { font-family: var(--mono); font-size: 7px; letter-spacing: 2px; color: var(--text-muted); margin-top: 3px; }
+
+/* ── POUR OVER GUIDE ── */
+.guide-section { background: var(--bg); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.guide-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; }
+.guide-title { font-family: var(--mono); font-size: 9px; letter-spacing: 2.5px; color: var(--text-muted); }
+.guide-toggle { background: none; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: var(--text-dim); font-family: var(--mono); font-size: 8px; letter-spacing: 1px; padding: 3px 10px; cursor: pointer; }
+.guide-body { padding: 0 12px 12px; display: none; }
+.guide-body.open { display: block; }
+
+/* Recipe selector */
+.recipe-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+.recipe-chip { padding: 5px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; font-family: var(--mono); font-size: 8px; letter-spacing: 1.5px; color: var(--text-dim); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.recipe-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(232,201,122,0.1); }
+.recipe-chip.locked { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+.recipe-chip.active.locked { opacity: 0.8; }
+.recipe-chip.custom-slot { border-style: dashed; }
+.recipe-chip.custom-slot.active { border-style: solid; }
+.chip-add-btn { width: 26px; height: 26px; border-radius: 50%; border: 1.5px dashed rgba(255,255,255,0.25); background: none; color: rgba(255,255,255,0.35); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; line-height: 1; }
+.chip-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+.chip-add-btn.locked { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
+.brew-lock-badge { display: none; font-family: var(--mono); font-size: 7px; letter-spacing: 1.5px; color: var(--red); border: 1px solid rgba(224,112,112,0.3); border-radius: 6px; padding: 2px 8px; background: rgba(224,112,112,0.08); }
+.brew-lock-badge.show { display: inline-flex; align-items: center; gap: 4px; }
+.nudge-btn.locked { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
+
+/* Custom Editor */
+.custom-params-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+.custom-param-cell { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.custom-param-lbl { font-family: var(--mono); font-size: 6.5px; letter-spacing: 1.5px; color: var(--text-muted); }
+.custom-param-val { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+.custom-param-nudge { display: flex; gap: 3px; }
+.custom-param-nudge button { width: 18px; height: 18px; border-radius: 4px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.custom-step-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; }
+.custom-step-row1 { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.custom-step-name { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; font-family: var(--mono); font-size: 9px; letter-spacing: 1px; color: var(--text); padding: 4px 8px; outline: none; }
+.custom-step-name::placeholder { color: var(--text-muted); }
+.custom-step-del { width: 22px; height: 22px; border-radius: 6px; background: rgba(224,112,112,0.1); border: 1px solid rgba(224,112,112,0.25); color: var(--red); font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.custom-step-row2 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.custom-field { display: flex; flex-direction: column; gap: 2px; }
+.custom-field-lbl { font-family: var(--mono); font-size: 6px; letter-spacing: 1px; color: var(--text-muted); }
+.custom-field input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; font-family: var(--mono); font-size: 10px; color: var(--text); padding: 4px 6px; outline: none; width: 100%; }
+.custom-field input::placeholder { color: var(--text-muted); }
+.custom-action-btn { flex: 1; padding: 7px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; font-family: var(--mono); font-size: 8px; letter-spacing: 1.5px; color: var(--text-dim); cursor: pointer; transition: all 0.2s; }
+.custom-action-btn.accent { border-color: rgba(232,201,122,0.4); color: var(--accent); background: rgba(232,201,122,0.07); }
+.custom-action-btn:active { transform: scale(0.97); }
+
+/* Flow target bar */
+.flow-guide-bar { position: relative; height: 52px; background: rgba(255,255,255,0.04); border-radius: 10px; margin: 0 0 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+.flow-guide-zone { position: absolute; top: 0; bottom: 0; background: rgba(94,203,138,0.12); border-left: 1px solid rgba(94,203,138,0.3); border-right: 1px solid rgba(94,203,138,0.3); }
+.flow-guide-label { position: absolute; top: 4px; right: 6px; font-family: var(--mono); font-size: 7px; color: rgba(94,203,138,0.5); letter-spacing: 1px; }
+.flow-guide-cursor { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); border-radius: 2px; transition: left 0.15s; box-shadow: 0 0 6px var(--accent); }
+.flow-guide-cursor-val { position: absolute; top: 50%; transform: translateY(-50%); left: 5px; font-family: var(--mono); font-size: 14px; color: var(--accent); white-space: nowrap; }
+.flow-guide-floor { position: absolute; bottom: 4px; left: 6px; font-family: var(--mono); font-size: 7px; color: var(--text-muted); }
+.flow-guide-ceil { position: absolute; bottom: 4px; right: 6px; font-family: var(--mono); font-size: 7px; color: var(--text-muted); }
+
+/* Pour steps */
+.steps-list { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.step-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); transition: all 0.3s; }
+.step-item.current { border-color: rgba(232,201,122,0.35); background: rgba(232,201,122,0.06); }
+.step-item.done { opacity: 0.4; }
+.step-num { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--text-muted); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 9px; color: var(--text-muted); flex-shrink: 0; }
+.step-item.current .step-num { border-color: var(--accent); color: var(--accent); background: rgba(232,201,122,0.1); }
+.step-item.done .step-num { border-color: var(--green); background: rgba(94,203,138,0.2); }
+.step-item.done .step-num::after { content: '✓'; font-size: 8px; color: var(--green); }
+.step-item.done .step-num { font-size: 0; }
+.step-info { flex: 1; }
+.step-name { font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; color: var(--text-dim); }
+.step-item.current .step-name { color: var(--accent); }
+.step-detail { font-family: var(--mono); font-size: 8.5px; color: var(--text-muted); margin-top: 3px; }
+.step-target-w { font-family: var(--mono); font-size: 12px; color: var(--text-dim); text-align: right; }
+.step-item.current .step-target-w { color: var(--accent); }
+
+/* Yield progress */
+.yield-section { padding: 10px 14px; background: var(--surface2); border-top: 1px solid var(--border); }
+.yield-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.yield-label { font-family: var(--mono); font-size: 8px; letter-spacing: 2px; color: var(--text-muted); }
+.yield-target-val { font-family: var(--mono); font-size: 9px; color: var(--purple); letter-spacing: 1px; }
+.yield-bar-wrap { height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
+.yield-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--purple)); border-radius: 3px; transition: width 0.3s, background 0.3s; }
+
+/* ── WEIGHT AREA ── */
+.weight-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 22px 20px 14px; }
+.weight-ring { position: relative; width: 220px; height: 220px; }
+.ring-svg { position: absolute; inset: 0; }
+.weight-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.weight-number { display: flex; align-items: baseline; gap: 0; }
+.weight-int { font-family: var(--mono); font-size: 52px; color: var(--text-muted); line-height: 1; transition: color 0.3s; }
+.weight-int.on { color: var(--text); }
+.weight-dot, .weight-dec { font-family: var(--mono); font-size: 28px; color: rgba(255,255,255,0.2); transition: color 0.3s; }
+.weight-dot.on, .weight-dec.on { color: rgba(255,255,255,0.4); }
+.weight-unit { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--text-muted); margin-top: 6px; }
+@keyframes pulse-ring { 0%{transform:scale(1);opacity:1} 100%{transform:scale(1.1);opacity:0} }
+.pulse-overlay { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); pointer-events: none; animation: pulse-ring 0.45s ease-out forwards; }
+.tare-btn { margin-top: 22px; width: 150px; padding: 13px 0; border-radius: 28px; border: 1.5px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.5); font-family: var(--mono); font-size: 10px; letter-spacing: 4px; cursor: pointer; transition: all 0.12s; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.tare-btn:hover:not(:disabled) { background: rgba(255,255,255,0.07); color: var(--text); border-color: rgba(255,255,255,0.35); }
+.tare-btn:active:not(:disabled) { transform: scale(0.94); }
+.tare-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+.tare-btn.sending { border-color: rgba(232,201,122,0.5); color: var(--accent); background: rgba(232,201,122,0.07); animation: tare-pulse 0.6s ease-in-out infinite alternate; }
+.tare-btn.success { border-color: rgba(94,203,138,0.6); color: var(--green); background: rgba(94,203,138,0.08); }
+.tare-btn.fail { border-color: rgba(224,112,112,0.6); color: var(--red); background: rgba(224,112,112,0.08); }
+@keyframes tare-pulse { from{opacity:0.6} to{opacity:1} }
+
+/* ── BREW PARAMS COMPACT ── */
+.brew-params { padding: 10px 14px 14px; background: var(--bg); border-top: 1px solid var(--border); }
+.params-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-bottom: 8px; }
+.param-block { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 9px; padding: 8px 8px; text-align: center; }
+.param-label { font-family: var(--mono); font-size: 7px; letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 4px; }
+.param-val { font-family: var(--mono); font-size: 16px; color: rgba(255,255,255,0.3); transition: color 0.3s; }
+.param-val.set { color: var(--accent); }
+.param-unit { font-family: var(--mono); font-size: 7px; color: var(--text-muted); }
+.param-nudge { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
+.nudge-btn { width: 20px; height: 20px; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.ratio-display { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 9px; padding: 7px 10px; display: flex; justify-content: space-between; align-items: center; }
+.ratio-left { font-family: var(--mono); font-size: 8px; letter-spacing: 1.5px; color: var(--text-muted); }
+.ratio-val-wrap { display: flex; align-items: baseline; gap: 2px; }
+.ratio-pre { font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
+.ratio-val { font-family: var(--mono); font-size: 24px; color: rgba(255,255,255,0.2); transition: color 0.3s; }
+.ratio-gram-note { font-family: var(--mono); font-size: 8px; color: var(--text-muted); }
+
+/* ══════════════════════════════════════════════
+   TAB 2 — GRAPH  
+══════════════════════════════════════════════ */
+.chart-section { flex: 1; display: flex; flex-direction: column; background: var(--bg); }
+.chart-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 6px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 6px; }
+.chart-legend { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-line { width: 16px; height: 2px; }
+.legend-label { font-family: var(--mono); font-size: 8px; letter-spacing: 1px; color: rgba(255,255,255,0.3); }
+.chart-actions { display: flex; gap: 6px; }
+.chart-action-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; color: var(--text-dim); font-family: var(--mono); font-size: 8px; letter-spacing: 1px; padding: 4px 10px; cursor: pointer; }
+.chart-action-btn:hover { background: rgba(255,255,255,0.08); }
+
+/* Summary strip */
+.summary-strip { display: none; grid-template-columns: repeat(4,1fr); gap: 0; border-bottom: 1px solid var(--border); }
+.summary-strip.show { display: grid; }
+.sum-cell { padding: 10px 8px; text-align: center; border-right: 1px solid var(--border); }
+.sum-cell:last-child { border-right: none; }
+.sum-lbl { font-family: var(--mono); font-size: 7px; letter-spacing: 1.5px; color: var(--text-muted); }
+.sum-val { font-family: var(--mono); font-size: 16px; margin-top: 2px; }
+.sum-unit { font-family: var(--mono); font-size: 7px; color: var(--text-muted); }
+
+/* Verdict card */
+.verdict-card { display: none; margin: 10px 14px; padding: 10px 14px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
+.verdict-card.show { display: block; }
+.verdict-score-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.verdict-score-wrap { display: flex; flex-direction: column; gap: 3px; }
+.verdict-score { font-family: var(--mono); font-size: 34px; line-height: 1; }
+.verdict-grade { font-family: var(--mono); font-size: 7px; letter-spacing: 2.5px; color: var(--text-muted); }
+.verdict-badge { font-family: var(--mono); font-size: 7.5px; letter-spacing: 1.5px; padding: 4px 10px; border-radius: 6px; text-align: center; }
+.sca-breakdown { border-top: 1px solid rgba(255,255,255,0.06); margin-bottom: 10px; padding-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+.sca-row { display: flex; align-items: center; gap: 7px; }
+.sca-label { font-family: var(--mono); font-size: 7px; letter-spacing: 1.5px; color: var(--text-muted); width: 52px; flex-shrink: 0; }
+.sca-bar-wrap { flex: 1; height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+.sca-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.sca-pts { font-family: var(--mono); font-size: 7.5px; color: var(--text-dim); width: 32px; text-align: right; flex-shrink: 0; }
+.sca-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 3px 0; }
+.sca-total-row { display: flex; align-items: center; gap: 7px; }
+.sca-total-label { font-family: var(--mono); font-size: 7px; letter-spacing: 1.5px; color: var(--text-muted); width: 52px; flex-shrink: 0; }
+.sca-total-bar-wrap { flex: 1; height: 7px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+.sca-total-bar { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+.sca-total-pts { font-family: var(--mono); font-size: 9px; width: 32px; text-align: right; flex-shrink: 0; }
+.verdict-notes { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; }
+.verdict-note { font-family: var(--mono); font-size: 8px; color: var(--text-dim); line-height: 1.6; letter-spacing: 0.3px; padding: 5px 7px; background: rgba(255,255,255,0.02); border-radius: 5px; border-left: 2px solid rgba(255,255,255,0.08); }
+.verdict-note.note-pass { border-left-color: rgba(94,203,138,0.4); }
+.verdict-note.note-warn { border-left-color: rgba(232,201,122,0.4); }
+.verdict-note.note-fail { border-left-color: rgba(224,112,112,0.4); }
+.verdict-note .note-key { letter-spacing: 2px; font-size: 7.5px; }
+.btn-save-session { width: calc(100% - 28px); margin: 8px 14px; padding: 11px; border-radius: 10px; border: 1.5px solid rgba(94,203,138,0.3); background: rgba(94,203,138,0.07); color: var(--green); font-family: var(--mono); font-size: 10px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; }
+.btn-save-session:hover { background: rgba(94,203,138,0.14); }
+.btn-done { width: calc(100% - 28px); margin: 0 14px 14px; padding: 11px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.12); background: none; color: rgba(255,255,255,0.35); font-family: var(--mono); font-size: 10px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; }
+.btn-done:hover { background: rgba(255,255,255,0.06); }
+
+/* ══════════════════════════════════════════════
+   TAB 3 — HISTORY
+══════════════════════════════════════════════ */
+.history-section { flex: 1; display: flex; flex-direction: column; }
+.history-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.history-title { font-family: var(--mono); font-size: 9px; letter-spacing: 2.5px; color: var(--text-dim); }
+.history-count { font-family: var(--mono); font-size: 8px; color: var(--text-muted); }
+.history-list { flex: 1; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
+.history-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 40px 20px; }
+.history-empty-icon { font-size: 32px; opacity: 0.2; margin-bottom: 12px; }
+.history-empty-text { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px; text-align: center; line-height: 1.8; }
+.history-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; cursor: pointer; transition: border-color 0.2s; }
+.history-card:hover { border-color: rgba(255,255,255,0.18); }
+.hc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.hc-date { font-family: var(--mono); font-size: 8px; color: var(--text-muted); letter-spacing: 1px; }
+.hc-score { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.hc-recipe { font-family: var(--mono); font-size: 8px; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 6px; }
+.hc-stats { display: flex; gap: 0; }
+.hc-stat { flex: 1; text-align: center; }
+.hc-stat + .hc-stat { border-left: 1px solid var(--border); }
+.hc-stat-val { font-family: var(--mono); font-size: 13px; }
+.hc-stat-lbl { font-family: var(--mono); font-size: 7px; letter-spacing: 1.5px; color: var(--text-muted); margin-top: 1px; }
+.hc-verdict { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 8px; color: var(--text-muted); letter-spacing: 1px; }
+.btn-clear-history { margin: 8px 12px; padding: 9px; border-radius: 8px; border: 1px solid rgba(224,112,112,0.25); background: rgba(224,112,112,0.05); color: rgba(224,112,112,0.5); font-family: var(--mono); font-size: 9px; letter-spacing: 2px; cursor: pointer; width: calc(100% - 24px); }
+.btn-clear-history:hover { background: rgba(224,112,112,0.12); color: var(--red); }
+
+/* ══════════════════════════════════════════════
+   MODAL — History Detail
+══════════════════════════════════════════════ */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; align-items: flex-end; backdrop-filter: blur(3px); }
+.modal-overlay.open { display: flex; }
+.modal-sheet { background: var(--surface); border-radius: 20px 20px 0 0; border-top: 1px solid var(--border); width: 100%; max-height: 85vh; overflow-y: auto; padding: 16px 16px 32px; }
+.modal-handle { width: 36px; height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; margin: 0 auto 16px; }
+.modal-title { font-family: var(--mono); font-size: 9px; letter-spacing: 3px; color: var(--text-dim); margin-bottom: 14px; }
+.modal-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.modal-stat-card { background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.06); }
+.msc-label { font-family: var(--mono); font-size: 7px; letter-spacing: 1.5px; color: var(--text-muted); }
+.msc-val { font-family: var(--mono); font-size: 22px; margin-top: 3px; }
+.msc-unit { font-family: var(--mono); font-size: 7px; color: var(--text-muted); }
+.modal-notes { margin-top: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.06); }
+.modal-close { width: 100%; margin-top: 14px; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: none; color: rgba(255,255,255,0.4); font-family: var(--mono); font-size: 10px; letter-spacing: 2px; cursor: pointer; }
+.modal-del { width: 100%; margin-top: 6px; padding: 10px; border-radius: 10px; border: 1px solid rgba(224,112,112,0.2); background: none; color: rgba(224,112,112,0.45); font-family: var(--mono); font-size: 9px; letter-spacing: 2px; cursor: pointer; }
+.modal-chart-wrap { margin: 12px 0 0; background: #0a0a0a; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); }
+.modal-chart-header { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.modal-chart-title { font-family: var(--mono); font-size: 7px; letter-spacing: 2px; color: var(--text-muted); }
+.modal-chart-legend { display: flex; gap: 10px; align-items: center; }
+.modal-chart-legend span { font-family: var(--mono); font-size: 7px; letter-spacing: 1px; }
+.modal-chart-no-data { font-family: var(--mono); font-size: 9px; color: var(--text-muted); text-align: center; padding: 20px; letter-spacing: 1.5px; }
+
+/* ══════════════════════════════════════════════
+   MISC & DEBUG
+══════════════════════════════════════════════ */
+.hint { padding: 8px 16px 20px; text-align: center; font-family: var(--mono); font-size: 9px; color: var(--text-muted); letter-spacing: 1px; line-height: 1.7; }
+.model-badge { font-family: var(--mono); font-size: 7px; letter-spacing: 2px; color: rgba(255,255,255,0.12); text-align: center; padding: 3px 0 6px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand-wrap">
+      <div class="brand">EUGENIX<span style="color:var(--accent);font-size:9px;letter-spacing:2px;">.lab</span></div>
+      <div class="brand-sub">DESIGNED BY NA8AWI</div>
+    </div>
+    <div class="header-right">
+      <button id="langBtn" onclick="toggleLang()" style="background:none;border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:var(--text-dim);font-family:var(--mono);font-size:9px;letter-spacing:1.5px;padding:4px 9px;cursor:pointer;transition:all 0.2s;" title="Toggle Language">ID</button>
+      <button class="icon-btn-hdr" onclick="switchTab('history')" title="History">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- NO BLE -->
+  <div class="no-ble-warn" id="noBleWarn">⚠ Web Bluetooth not supported. Please use Chrome or Edge.</div>
+
+  <!-- BLE BANNER -->
+  <div class="ble-banner" id="bleBanner">
+    <div class="ble-left">
+      <div class="ble-dot" id="bleDot"></div>
+      <span class="ble-label" id="bleLabel">NOT CONNECTED</span>
+    </div>
+    <button class="ble-btn" id="bleBtn" onclick="handleBleButton()">CONNECT</button>
+  </div>
+
+  <!-- TAB NAV -->
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tab-brew" onclick="switchTab('brew')" data-i18n="tab_brew">BREW</button>
+    <button class="tab-btn" id="tab-history" onclick="switchTab('history')" data-i18n="tab_history">HISTORY</button>
+  </div>
+
+  <!-- ══════════════ TAB: BREW ══════════════ -->
+  <div class="tab-pane active" id="pane-brew">
+
+    <!-- Timer + Controls -->
+    <div class="timer-section">
+      <div class="timer-row">
+        <div class="digit-circle" id="d0">0</div>
+        <div class="digit-circle" id="d1">0</div>
+        <div class="timer-colon">:</div>
+        <div class="digit-circle" id="d2">0</div>
+        <div class="digit-circle" id="d3">0</div>
+      </div>
+      <div class="controls-row">
+        <button class="icon-btn" onclick="resetAll()" title="Reset">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.9" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+        </button>
+        <div class="flow-center">
+          <div class="flow-val" id="flowVal">--</div>
+          <div class="flow-label">FLOW g/s</div>
+        </div>
+        <button class="icon-btn" id="playBtn" onclick="toggleTimer()">
+          <svg id="playIcon" width="17" height="17" viewBox="0 0 24 24" fill="rgba(255,255,255,0.65)" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <svg id="pauseIcon" width="17" height="17" viewBox="0 0 24 24" fill="rgba(232,201,122,0.85)" stroke="none" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+        <button class="icon-btn" id="autoBtn" onclick="toggleAutoStart()" title="Auto-start">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="doneBtn" onclick="finishBrewing()" style="display:none;" title="Done">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(94,203,138,0.8)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Pour Over Guide -->
+    <div class="guide-section">
+      <div class="guide-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="guide-title" data-i18n="guide_title">▼ POUR OVER GUIDE</span>
+          <span class="brew-lock-badge" id="brewLockBadge">⚠ BREWING</span>
+        </div>
+        <button class="guide-toggle" onclick="toggleGuide()">OPEN</button>
+      </div>
+      <div class="guide-body" id="guideBody">
+        <!-- Recipe selector -->
+        <div class="recipe-row" id="recipeRow"></div>
+
+        <!-- Flow target bar -->
+        <div style="font-family:var(--mono);font-size:7px;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:5px;" data-i18n="target_flow">TARGET FLOW RATE</div>
+        <div class="flow-guide-bar" id="flowGuideBar">
+          <div class="flow-guide-zone" id="flowGuideZone"></div>
+          <div class="flow-guide-floor" id="flowFloor">0.0</div>
+          <div class="flow-guide-ceil" id="flowCeil">10.0</div>
+          <div class="flow-guide-label" id="flowGuideLabel">TARGET ZONE</div>
+          <div class="flow-guide-cursor" id="flowCursor" style="left:0%"></div>
+          <div class="flow-guide-cursor-val" id="flowCursorVal">-- g/s</div>
+        </div>
+
+        <!-- Step list -->
+        <div style="font-family:var(--mono);font-size:7px;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:5px;" data-i18n="brew_steps">BREW STEPS</div>
+        <div class="steps-list" id="stepsList"></div>
+
+        <!-- Custom Recipe Editor (shown only when CUSTOM selected) -->
+        <div id="customEditor" style="display:none;margin-top:10px;">
+          <!-- Header row: name + toggle -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-family:var(--mono);font-size:7px;letter-spacing:1.5px;color:var(--accent);">✎</span>
+            <input id="customRecipeName"
+              style="flex:1;background:rgba(232,201,122,0.06);border:1px solid rgba(232,201,122,0.25);border-radius:7px;font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--accent);padding:4px 10px;outline:none;"
+              placeholder="RECIPE NAME"
+              oninput="customRecipeData.recipeName=this.value.toUpperCase();this.value=this.value.toUpperCase();syncChipName();">
+            <button id="customEditorToggle" onclick="toggleCustomEditorBody()"
+              style="background:none;border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:var(--text-dim);font-family:var(--mono);font-size:8px;letter-spacing:1px;padding:4px 10px;cursor:pointer;white-space:nowrap;">
+              HIDE ▲
+            </button>
+          </div>
+          <!-- Collapsible body -->
+          <div id="customEditorBody">
+            <!-- Custom params -->
+            <div class="custom-params-row" id="customParamsRow"></div>
+            <!-- Custom steps -->
+            <div id="customStepEditor"></div>
+            <!-- Actions -->
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="custom-action-btn" onclick="addCustomStep()">+ ADD STEP</button>
+              <button class="custom-action-btn accent" onclick="saveCustomRecipe()">💾 SAVE RECIPE</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GRAFIK ── -->
+    <div class="chart-section" style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+      <div class="chart-header">
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-line" style="background:var(--accent);"></div><span class="legend-label" style="color:var(--accent)">YIELD</span></div>
+          <div class="legend-item"><div class="legend-line" style="background:var(--blue);border-top:1px dashed var(--blue);"></div><span class="legend-label" style="color:var(--blue)">FLOW</span></div>
+          <div class="legend-item"><div class="legend-line" style="background:var(--purple);opacity:0.6;"></div><span class="legend-label" style="color:var(--purple)">AVG</span></div>
+          <span id="chartAvgBadge" style="font-family:var(--mono);font-size:8px;color:var(--purple);display:none;"></span>
+        </div>
+        <div class="chart-actions">
+          <button class="chart-action-btn" onclick="saveChartImage()">⬇ PNG</button>
+          <button class="chart-action-btn" onclick="clearChart()">RESET</button>
+        </div>
+      </div>
+
+      <!-- Summary strip (after done) -->
+      <div class="summary-strip" id="summaryStrip">
+        <div class="sum-cell"><div class="sum-lbl" data-i18n="sum_yield">YIELD</div><div class="sum-val" id="sumWeight" style="color:var(--accent)">–</div><div class="sum-unit">g</div></div>
+        <div class="sum-cell"><div class="sum-lbl" data-i18n="sum_time">TIME</div><div class="sum-val" id="sumTime" style="color:var(--green)">–</div><div class="sum-unit">s</div></div>
+        <div class="sum-cell"><div class="sum-lbl" data-i18n="sum_avgflow">AVG FLOW</div><div class="sum-val" id="sumAvgFlow" style="color:var(--blue)">–</div><div class="sum-unit">g/s</div></div>
+        <div class="sum-cell"><div class="sum-lbl" data-i18n="sum_score">SCORE</div><div class="sum-val" id="sumScore">–</div><div class="sum-unit">%</div></div>
+      </div>
+
+      <!-- Canvas -->
+      <div style="position:relative;flex:1;min-height:220px;">
+        <canvas id="shotCanvas" style="display:block;width:100%;"></canvas>
+        <div id="chartLiveOverlay" style="display:none;position:absolute;top:12px;left:40px;background:rgba(10,10,10,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:5px 10px;backdrop-filter:blur(4px);">
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div style="text-align:center;"><div id="overlayWeight" style="font-family:var(--mono);font-size:15px;color:var(--accent);">0.0</div><div style="font-family:var(--mono);font-size:6px;color:rgba(232,201,122,0.5);margin-top:1px;">g</div></div>
+            <div style="width:1px;height:24px;background:rgba(255,255,255,0.08);"></div>
+            <div style="text-align:center;"><div id="overlayFlow" style="font-family:var(--mono);font-size:15px;color:var(--blue);">0.0</div><div style="font-family:var(--mono);font-size:6px;color:rgba(126,200,232,0.5);margin-top:1px;">g/s</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Verdict card -->
+      <div class="verdict-card" id="verdictCard">
+        <div class="verdict-score-row">
+          <div class="verdict-score-wrap">
+            <div style="font-family:var(--mono);font-size:7px;letter-spacing:2.5px;color:var(--text-muted);margin-bottom:3px;" data-i18n="sca_label">SCA POUR OVER SCORE</div>
+            <div class="verdict-score" id="verdictScore">–</div>
+            <div class="verdict-grade" id="verdictGrade">/ 100 PT</div>
+          </div>
+          <div class="verdict-badge" id="verdictBadge"></div>
+        </div>
+        <div class="sca-breakdown" id="scaBreakdown"></div>
+        <div class="verdict-notes" id="verdictNotes"></div>
+      </div>
+
+      <button class="btn-save-session" id="btnSaveSession" data-i18n="btn_save" style="display:none;" onclick="saveSessionToHistory()">☕ SAVE TO HISTORY</button>
+      <button class="btn-done" id="btnDone" data-i18n="btn_done" style="display:none;" onclick="resetAll()">✓ DONE &amp; RESET</button>
+    </div>
+
+    <!-- Yield Progress -->
+    <div class="yield-section" id="yieldSection" style="display:none;">
+      <div class="yield-row">
+        <span class="yield-label" data-i18n="yield_progress">YIELD PROGRESS</span>
+        <span class="yield-target-val" id="yieldTargetVal">target: –g</span>
+      </div>
+      <div class="yield-bar-wrap">
+        <div class="yield-bar" id="yieldBar"></div>
+      </div>
+    </div>
+
+    <!-- Weight Ring -->
+    <div class="weight-section">
+      <div class="weight-ring" id="weightRing">
+        <svg class="ring-svg" viewBox="0 0 220 220">
+          <circle cx="110" cy="110" r="106" stroke="rgba(255,255,255,0.07)" stroke-width="2" fill="none"/>
+          <circle cx="110" cy="110" r="94" stroke="rgba(255,255,255,0.04)" stroke-width="1" fill="none"/>
+          <!-- Progress ring -->
+          <circle id="progressRing" cx="110" cy="110" r="106" stroke="rgba(232,201,122,0.0)" stroke-width="2.5" fill="none"
+            stroke-dasharray="666" stroke-dashoffset="666" stroke-linecap="round"
+            transform="rotate(-90 110 110)" style="transition: stroke-dashoffset 0.4s, stroke 0.3s;"/>
+        </svg>
+        <div class="weight-content">
+          <div class="weight-number">
+            <span class="weight-int" id="wInt">0</span>
+            <span class="weight-dot" id="wDot">.</span>
+            <span class="weight-dec" id="wDec">0</span>
+          </div>
+          <div class="weight-unit">GRAM</div>
+        </div>
+      </div>
+      <button class="tare-btn" id="tareBtn" onclick="doTare()">TARE</button>
+    </div>
+
+    <!-- Brew Params -->
+    <div class="brew-params">
+      <div class="params-grid">
+        <div class="param-block">
+          <div class="param-label" data-i18n="param_dose">DOSE</div>
+          <div style="display:flex;align-items:baseline;gap:1px;justify-content:center;">
+            <div class="param-val" id="doseDisplay">–</div>
+            <div class="param-unit">g</div>
+          </div>
+          <div class="param-nudge">
+            <button class="nudge-btn" onclick="nudgeDose(-0.1)">−</button>
+            <button class="nudge-btn" onclick="nudgeDose(+0.1)">+</button>
+          </div>
+        </div>
+        <div class="param-block">
+          <div class="param-label" data-i18n="param_temp">TEMP</div>
+          <div style="display:flex;align-items:baseline;gap:1px;justify-content:center;">
+            <div class="param-val" id="tempDisplay">–</div>
+            <div class="param-unit">°C</div>
+          </div>
+          <div class="param-nudge">
+            <button class="nudge-btn" onclick="nudgeTemp(-1)">−</button>
+            <button class="nudge-btn" onclick="nudgeTemp(+1)">+</button>
+          </div>
+        </div>
+        <div class="param-block">
+          <div class="param-label" data-i18n="param_ratio">RATIO 1:</div>
+          <div class="param-val" id="ratioTargetDisplay">–</div>
+          <div class="param-nudge">
+            <button class="nudge-btn" onclick="nudgeRatio(-0.1)">−</button>
+            <button class="nudge-btn" onclick="nudgeRatio(+0.1)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="ratio-display">
+        <div>
+          <div class="ratio-left" data-i18n="brew_ratio_now">BREW RATIO NOW</div>
+          <div class="ratio-gram-note" id="ratioGrams">– g / – g</div>
+        </div>
+        <div class="ratio-val-wrap">
+          <span class="ratio-pre">1 :</span>
+          <span class="ratio-val" id="ratioDisplay">–</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="model-badge">EUGENIX.LAB · POUR OVER TRACKER · © NA8AWI</div>
+
+    <!-- Debug & Raw -->
+    <div class="hint" id="hint">Power on your scale,<br/>then tap <strong style="color:rgba(255,255,255,0.55)">"CONNECT"</strong>.<br/><span style="font-size:8px;color:var(--text-muted)">Chrome/Edge · Bluetooth ON</span></div>
+  </div>
+
+  <!-- ══════════════ TAB: HISTORY ══════════════ -->
+  <div class="tab-pane" id="pane-history">
+    <div class="history-section">
+      <div class="history-header">
+        <span class="history-title" data-i18n="history_title">▼ BREW LOG</span>
+        <span class="history-count" id="historyCount">0 sessions</span>
+      </div>
+      <div class="history-list" id="historyList">
+        <div class="history-empty">
+          <div class="history-empty-icon">☕</div>
+          <div class="history-empty-text">No sessions saved yet.<br/>Finish a brew and save it to history.</div>
+        </div>
+      </div>
+      <button class="btn-clear-history" onclick="clearHistory()" id="btnClearHistory" style="display:none;" data-i18n="btn_clear">✕ CLEAR ALL HISTORY</button>
+    </div>
+  </div>
+
+</div><!-- .app -->
+
+<!-- MODAL: History detail -->
+<div class="modal-overlay" id="historyModal" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">SESSION DETAIL</div>
+    <div class="modal-stats-grid" id="modalStats"></div>
+    <!-- Mini chart -->
+    <div class="modal-chart-wrap" id="modalChartWrap">
+      <div class="modal-chart-header">
+        <span class="modal-chart-title" data-i18n="modal_chart_title">▼ BREW CHART</span>
+        <div class="modal-chart-legend">
+          <span style="color:var(--accent)">— YIELD</span>
+          <span style="color:var(--blue)">— FLOW</span>
+        </div>
+      </div>
+      <canvas id="modalCanvas" style="display:block;width:100%;"></canvas>
+    </div>
+    <div class="modal-notes" id="modalNotes"></div>
+    <button class="modal-close" onclick="document.getElementById('historyModal').classList.remove('open')" data-i18n="modal_close">CLOSE</button>
+    <button class="modal-del" data-i18n="modal_del" id="modalDelBtn">✕ DELETE SESSION</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let bleDevice=null, bleServer=null, notifyChar=null, writeChar=null;
+let connected=false;
+let timerRunning=false, timerMs=0, timerStart=0, timerRAF=null;
+let rawWeight=0, tareOffset=0;
+let flowWindow=[], lastFlowWeight=0, lastFlowTime=Date.now();
+let chartData=[], chartRAF=null, chartDirty=false;
+const CHART_INTERVAL=500;
+let chartLastRecord=0;
+let shotSummary=null;
+let brewDose=15, brewTargetRatio=15, brewTemp=93;
+let autoStartEnabled=false, autoStartArmed=false, autoStartBaseline=0;
+const AUTO_TRIGGER_G=0.5, AUTO_STABLE_MS=400;
+let autoArmTimer=null;
+let probedCmd=null, taringLock=false, btnResetTimer=null;
+let probing=false;
+let decodeCount=0, lastRawHex='';
+let guideOpen=false;
+let currentStep=0;
+let activeRecipe=null;
+let currentHistoryId=null;
+
+// ── Pour Over Recipes
+const RECIPES = [
+  {
+    id:'4-6',
+    name:'4:6 METHOD',
+    desc:'Tetsuya Kasuya · WBC 2016',
+    dose:20, ratio:15, temp:93,
+    flowMin:3.0, flowMax:6.0,
+    steps:[
+      {name:'BLOOM',    water:60,  time:'0:00',  flow:'3–6', note:'Pour evenly, wait for bloom 30–45 sec'},
+      {name:'1ST POUR', water:60,  time:'0:45',  flow:'4–6', note:'Pour in circles, develop sweetness'},
+      {name:'2ND POUR', water:60,  time:'1:30',  flow:'4–6', note:'Finish pouring by ~2:30'},
+      {name:'3RD POUR', water:60,  time:'2:30',  flow:'4–5', note:'Build body & strength'},
+      {name:'4TH POUR', water:60,  time:'3:15',  flow:'3–5', note:'Final pour, finish by ~4:30'},
+    ]
+  },
+  {
+    id:'hoffmann',
+    name:'HOFFMANN',
+    desc:'James Hoffmann · Ultimate V60',
+    dose:15, ratio:16.67, temp:100,
+    flowMin:2.5, flowMax:5.0,
+    steps:[
+      {name:'BLOOM',    water:50,  time:'0:00',  flow:'3–5', note:'Pour 2× coffee weight, bloom 45 sec'},
+      {name:'POUR 1',   water:100, time:'0:45',  flow:'3–5', note:'Pour slowly in circles'},
+      {name:'POUR 2',   water:100, time:'1:30',  flow:'3–4', note:'Add water up to 250g'},
+      {name:'STIR',     water:0,   time:'2:00',  flow:'–',   note:'Stir once clockwise'},
+      {name:'SWIRL',    water:0,   time:'3:00',  flow:'–',   note:'Gentle swirl to flatten the bed'},
+    ]
+  },
+  {
+    id:'wdt',
+    name:'3 POUR',
+    desc:'Simple · Beginner Friendly',
+    dose:15, ratio:15, temp:90,
+    flowMin:3.5, flowMax:7.0,
+    steps:[
+      {name:'BLOOM',    water:45,  time:'0:00',  flow:'4–7', note:'3× coffee weight, wait 30 sec'},
+      {name:'MAIN POUR',water:135, time:'0:30',  flow:'4–6', note:'Pour gradually up to 180g'},
+      {name:'FINAL',    water:45,  time:'1:30',  flow:'3–5', note:'Fill to target 225g'},
+    ]
+  }
+  // custom slots appended dynamically — see customSlots / syncCustomToRecipes()
+];
+
+// ── BLE UUID Sets
+const UUID_SETS=[
+  {name:'Parallel Plus FFE0',service:'0000ffe0-0000-1000-8000-00805f9b34fb',notify:'0000ffe1-0000-1000-8000-00805f9b34fb',write:'0000ffe1-0000-1000-8000-00805f9b34fb'},
+  {name:'Na8awi Arc FFE0',service:'0000ffe0-0000-1000-8000-00805f9b34fb',notify:'0000ffe4-0000-1000-8000-00805f9b34fb',write:'0000ffe9-0000-1000-8000-00805f9b34fb'},
+  {name:'FFF0/FFF4',service:'0000fff0-0000-1000-8000-00805f9b34fb',notify:'0000fff4-0000-1000-8000-00805f9b34fb',write:'0000fff3-0000-1000-8000-00805f9b34fb'},
+  {name:'FFF0/FFF1',service:'0000fff0-0000-1000-8000-00805f9b34fb',notify:'0000fff1-0000-1000-8000-00805f9b34fb',write:'0000fff2-0000-1000-8000-00805f9b34fb'},
+];
+const PROBE_CMDS=[
+  {label:'T\\r\\n',hex:'54 0D 0A'},{label:'T\\n',hex:'54 0A'},{label:'T',hex:'54'},
+  {label:'T\\r',hex:'54 0D'},{label:'Z\\r\\n',hex:'5A 0D 0A'},{label:'TARE\\r\\n',hex:'54 41 52 45 0D 0A'},
+  {label:'Arc tare',hex:'03 0A 01 00 00'},{label:'01 54',hex:'01 54'},{label:'A0 00',hex:'A0 00'},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+if(!navigator.bluetooth){
+  document.getElementById('noBleWarn').style.display='block';
+  document.getElementById('bleBtn').disabled=true;
+}
+window.addEventListener('DOMContentLoaded', () => {
+  loadCustomSlots(); // load saved custom recipe slots before building chips
+  buildRecipeChips();
+  selectRecipe(RECIPES[0]);
+  renderHistory();
+  loadProbedCmd(); // restore tare command from last session
+  // Restore last params
+  const saved = loadParams();
+  if(saved){
+    brewDose = saved.dose || 15;
+    brewTemp = saved.temp || 93;
+    brewTargetRatio = saved.ratio || 15;
+    refreshParamDisplays();
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════
+// LANGUAGE SYSTEM
+// ═══════════════════════════════════════════════════════════════
+let currentLang='en';
+
+const STRINGS={
+  en:{
+    tab_brew:'BREW', tab_history:'HISTORY',
+    guide_title:'▼ POUR OVER GUIDE', guide_open:'OPEN', guide_close:'CLOSE',
+    target_flow:'TARGET FLOW RATE', brew_steps:'BREW STEPS',
+    sum_yield:'YIELD', sum_time:'TIME', sum_avgflow:'AVG FLOW', sum_score:'SCORE',
+    sca_label:'SCA POUR OVER SCORE',
+    btn_save:'☕ SAVE TO HISTORY', btn_done:'✓ DONE & RESET',
+    yield_progress:'YIELD PROGRESS', yield_target:'target:',
+    param_dose:'DOSE', param_temp:'TEMP', param_ratio:'RATIO 1:',
+    brew_ratio_now:'BREW RATIO NOW',
+    history_title:'▼ BREW LOG', btn_clear:'✕ CLEAR ALL HISTORY',
+    history_empty:'No sessions saved yet.<br/>Finish a brew and save it to history.',
+    sessions:(n)=>`${n} session${n!==1?'s':''}`,
+    modal_chart_title:'▼ BREW CHART', modal_close:'CLOSE', modal_del:'✕ DELETE SESSION',
+    ble_disconnected:'NOT CONNECTED', ble_connect:'CONNECT', ble_disconnect:'DISCONNECT',
+    no_chart:'NO CHART DATA',
+    hint:'Power on your scale,<br/>then tap <strong style="color:rgba(255,255,255,0.55)">"CONNECT"</strong>.<br/><span style="font-size:8px;color:var(--text-muted)">Chrome/Edge · Bluetooth ON</span>',
+    bd_ratio:'RATIO', bd_time:'TIME', bd_consist:'CONSIST',
+    bd_flow:'FLOW', bd_peak:'PEAK', bd_bloom:'BLOOM', bd_total:'TOTAL',
+    hc_yield:'YIELD g', hc_time:'TIME', hc_flow:'FLOW g/s', hc_ratio:'RATIO',
+    v90:'🏆 SCA GOLD — Competition Grade', v80:'☕ SPECIALTY — Above Standard',
+    v70:'✓ QUALITY — Proficient', v60:'△ STANDARD — Acceptable',
+    vlow:(g)=>`✕ ${g} — Fundamentals need work`,
+    modal_yield:'YIELD', modal_time:'TIME', modal_avgflow:'AVG FLOW',
+    modal_peakflow:'PEAK FLOW', modal_brewratio:'BREW RATIO',
+    modal_score:'SCORE', modal_gram:'gram', modal_total:'total',
+    modal_sca:'SCA POUR OVER SCORECARD', lang_btn:'ID',
+    grade90:'SCA GOLD · EXCEPTIONAL', grade80:'SPECIALTY GRADE',
+    grade70:'QUALITY · PROFICIENT', grade60:'STANDARD GRADE',
+    grade45:'BELOW STANDARD', grade0:'DEFECTIVE',
+    verdict90:'EXCEPTIONAL', verdict80:'ABOVE STANDARD', verdict70:'PROFICIENT',
+    verdict60:'ACCEPTABLE', verdict45:'NEEDS WORK', verdict0:'SIGNIFICANT ERRORS',
+  },
+  id:{
+    tab_brew:'SEDUH', tab_history:'RIWAYAT',
+    guide_title:'▼ PANDUAN POUR OVER', guide_open:'BUKA', guide_close:'TUTUP',
+    target_flow:'TARGET LAJU ALIR', brew_steps:'LANGKAH SEDUH',
+    sum_yield:'HASIL', sum_time:'WAKTU', sum_avgflow:'RATA ALIR', sum_score:'SKOR',
+    sca_label:'SKOR SCA POUR OVER',
+    btn_save:'☕ SIMPAN KE RIWAYAT', btn_done:'✓ SELESAI & RESET',
+    yield_progress:'PROGRES YIELD', yield_target:'target:',
+    param_dose:'DOSIS', param_temp:'SUHU', param_ratio:'RASIO 1:',
+    brew_ratio_now:'RASIO SEDUH SAAT INI',
+    history_title:'▼ LOG SEDUH', btn_clear:'✕ HAPUS SEMUA RIWAYAT',
+    history_empty:'Belum ada sesi tersimpan.<br/>Selesaikan seduhan dan simpan ke riwayat.',
+    sessions:(n)=>`${n} sesi`,
+    modal_chart_title:'▼ GRAFIK SEDUH', modal_close:'TUTUP', modal_del:'✕ HAPUS SESI INI',
+    ble_disconnected:'TIDAK TERHUBUNG', ble_connect:'HUBUNGKAN', ble_disconnect:'PUTUSKAN',
+    no_chart:'TIDAK ADA DATA GRAFIK',
+    hint:'Nyalakan timbangan,<br/>lalu ketuk <strong style="color:rgba(255,255,255,0.55)">"HUBUNGKAN"</strong>.<br/><span style="font-size:8px;color:var(--text-muted)">Chrome/Edge · Bluetooth ON</span>',
+    bd_ratio:'RASIO', bd_time:'WAKTU', bd_consist:'KONSIST',
+    bd_flow:'ALIRAN', bd_peak:'PUNCAK', bd_bloom:'BLOOM', bd_total:'TOTAL',
+    hc_yield:'HASIL g', hc_time:'WAKTU', hc_flow:'ALIR g/s', hc_ratio:'RASIO',
+    v90:'🏆 SCA GOLD — Kelas Kompetisi', v80:'☕ SPECIALTY — Di Atas Standar',
+    v70:'✓ QUALITY — Kompeten', v60:'△ STANDARD — Dapat Diterima',
+    vlow:(g)=>`✕ ${g} — Perlu perbaikan fundamental`,
+    modal_yield:'HASIL', modal_time:'WAKTU', modal_avgflow:'RATA ALIR',
+    modal_peakflow:'PUNCAK ALIR', modal_brewratio:'RASIO SEDUH',
+    modal_score:'SKOR', modal_gram:'gram', modal_total:'total',
+    modal_sca:'SKOR KARTU SCA POUR OVER', lang_btn:'EN',
+    grade90:'SCA GOLD · LUAR BIASA', grade80:'KELAS SPECIALTY',
+    grade70:'BERKUALITAS · KOMPETEN', grade60:'KELAS STANDAR',
+    grade45:'DI BAWAH STANDAR', grade0:'CACAT',
+    verdict90:'LUAR BIASA', verdict80:'DI ATAS STANDAR', verdict70:'KOMPETEN',
+    verdict60:'DAPAT DITERIMA', verdict45:'PERLU PERBAIKAN', verdict0:'KESALAHAN SERIUS',
+  }
+};
+
+function t(key,...args){
+  const s=STRINGS[currentLang]||STRINGS.en;
+  const v=s[key]!==undefined?s[key]:STRINGS.en[key]||key;
+  return typeof v==='function'?v(...args):v;
+}
+
+function toggleLang(){
+  currentLang=currentLang==='en'?'id':'en';
+  applyLang();
+}
+
+function applyLang(){
+  document.getElementById('langBtn').textContent=t('lang_btn');
+  // Static data-i18n elements — save & restore display states first
+  const btnSave=document.getElementById('btnSaveSession');
+  const btnDone=document.getElementById('btnDone');
+  const strip=document.getElementById('summaryStrip');
+  const card=document.getElementById('verdictCard');
+  const savedBtnSave=btnSave?btnSave.style.display:'';
+  const savedBtnDone=btnDone?btnDone.style.display:'';
+  const savedStripShow=strip?strip.classList.contains('show'):false;
+  const savedCardShow=card?card.classList.contains('show'):false;
+
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    el.innerHTML=t(el.getAttribute('data-i18n'));
+  });
+  // Guide toggle text
+  document.querySelector('.guide-toggle').textContent=guideOpen?t('guide_close'):t('guide_open');
+  // Re-render dynamic sections
+  renderHistory();
+  if(shotSummary){
+    try{ renderSummary(shotSummary); }
+    catch(e){ console.error('Lang switch render error:',e); }
+  }
+  // Restore visibility state (in case renderSummary threw midway)
+  if(savedStripShow && strip) strip.classList.add('show');
+  if(savedCardShow && card) card.classList.add('show');
+  if(btnSave && savedBtnSave) btnSave.style.display=savedBtnSave;
+  if(btnDone && savedBtnDone) btnDone.style.display=savedBtnDone;
+  // Re-render modal if open
+  const modal=document.getElementById('historyModal');
+  if(modal.classList.contains('open')&&currentHistoryId){
+    const history=loadHistory();
+    const entry=history.find(e=>e.id===currentHistoryId);
+    if(entry) openHistoryModal(entry);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB NAV
+// ═══════════════════════════════════════════════════════════════
+function switchTab(id){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  document.getElementById('pane-'+id).classList.add('active');
+  if(id==='history') renderHistory();
+  if(id==='brew'){ chartDirty=true; if(!chartRAF) chartRAF=requestAnimationFrame(renderChart); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEBUG
+// ═══════════════════════════════════════════════════════════════
+function log(msg, type=''){
+  // debug panel removed
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BLE UI
+// ═══════════════════════════════════════════════════════════════
+function setBleUI(state, label){
+  const banner=document.getElementById('bleBanner');
+  const dot=document.getElementById('bleDot');
+  const lbl=document.getElementById('bleLabel');
+  const btn=document.getElementById('bleBtn');
+  const hint=document.getElementById('hint');
+  banner.className='ble-banner '+(state||'');
+  dot.className='ble-dot '+(state==='connected'?'on':state==='connecting'?'blink':state==='error'?'err':'');
+  lbl.className='ble-label '+(state==='connected'?'on':state==='connecting'?'blink':state==='error'?'err':'');
+  lbl.textContent=label;
+  if(state==='connected'){btn.textContent=t('ble_disconnect');btn.disabled=false;if(hint)hint.style.display='none';}
+  else if(state==='connecting'){btn.textContent='...';btn.disabled=true;if(hint)hint.style.display='none';}
+  else{btn.textContent=t('ble_connect');btn.disabled=false;if(hint)hint.style.display='';}
+}
+function handleBleButton(){ connected ? disconnect() : connectBLE(); }
+
+async function connectBLE(){
+  if(!navigator.bluetooth) return;
+  setBleUI('connecting','SELECT DEVICE...');
+  log('Opening Bluetooth dialog...','warn');
+  try{
+    bleDevice=await navigator.bluetooth.requestDevice({
+      filters:[{namePrefix:'Na8awi'},{namePrefix:'Parallel'},{namePrefix:'FS'},{services:['0000ffe0-0000-1000-8000-00805f9b34fb']},{services:['0000fff0-0000-1000-8000-00805f9b34fb']}],
+      optionalServices:['0000ffe0-0000-1000-8000-00805f9b34fb','0000ffe1-0000-1000-8000-00805f9b34fb','0000fff0-0000-1000-8000-00805f9b34fb','0000fff1-0000-1000-8000-00805f9b34fb','0000fff3-0000-1000-8000-00805f9b34fb','0000fff4-0000-1000-8000-00805f9b34fb']
+    });
+    log(`Device: "${bleDevice.name||'(unnamed)'}"`, 'ok');
+    setBleUI('connecting','CONNECTING...');
+    bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+    bleServer=await bleDevice.gatt.connect();
+    const services=await bleServer.getPrimaryServices();
+    log(`${services.length} service(s) found`,'warn');
+
+    let matched=false;
+    for(const us of UUID_SETS){
+      if(matched) break;
+      try{
+        const svc=await bleServer.getPrimaryService(us.service);
+        const nc=await svc.getCharacteristic(us.notify);
+        try{ writeChar=await svc.getCharacteristic(us.write); }catch(e){ writeChar=null; }
+        await nc.startNotifications();
+        nc.addEventListener('characteristicvaluechanged', onWeightData);
+        notifyChar=nc; connected=true; matched=true;
+        setBleUI('connected', bleDevice.name||'Na8awi');
+        updateWeightDisplay();
+        _restoreProbedCmd();
+        log(`✓ Connected via: "${us.name}"!`, 'ok');
+      }catch(e){ log(`  ✗ ${us.name}: ${e.message}`,'err'); }
+    }
+
+    if(!matched){
+      for(const svc of services){
+        if(matched) break;
+        try{
+          const chars=await svc.getCharacteristics();
+          for(const c of chars){
+            if((c.properties.notify||c.properties.indicate)&&!matched){
+              try{
+                await c.startNotifications();
+                c.addEventListener('characteristicvaluechanged', onWeightData);
+                notifyChar=c; connected=true; matched=true;
+                for(const wc of chars){
+                  if((wc.properties.write||wc.properties.writeWithoutResponse)&&wc.uuid!==c.uuid){ writeChar=wc; break; }
+                }
+                if(!writeChar&&(c.properties.write||c.properties.writeWithoutResponse)) writeChar=c;
+                setBleUI('connected', bleDevice.name||'SCALE');
+                updateWeightDisplay();
+                _restoreProbedCmd();
+                log(`Auto-discover: ${c.uuid}`, 'ok');
+                break;
+              }catch(e2){ log(`  auto failed: ${e2.message}`,'err'); }
+            }
+          }
+        }catch(e){}
+      }
+    }
+
+    if(!matched) throw new Error('No NOTIFY characteristic found. Check debug log.');
+  }catch(e){
+    log(`ERROR: ${e.message}`,'err');
+    if(e.name==='NotFoundError'||e.message.includes('cancel')||e.message.includes('User cancelled')){
+      setBleUI('','CANCELLED');
+    } else {
+      setBleUI('error','CONNECTION FAILED');
+    }
+    setTimeout(()=>{ if(!connected) setBleUI('','NOT CONNECTED'); }, 3000);
+  }
+}
+
+function disconnect(){
+  if(bleDevice&&bleDevice.gatt.connected) bleDevice.gatt.disconnect();
+  onDisconnected();
+}
+function onDisconnected(){
+  connected=false; notifyChar=null; writeChar=null; probedCmd=null;
+  stopTimer(); setBleUI('','DISCONNECTED');
+  updateWeightDisplay(); updateFlowDisplay();
+  log('Connection lost.','warn');
+  setTimeout(()=>{ if(!connected) setBleUI('','NOT CONNECTED'); }, 2000);
+}
+
+function _restoreProbedCmd(){
+  // Called after successful BLE connect to restore saved tare command
+  if(!probedCmd) loadProbedCmd();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WEIGHT DECODE
+// ═══════════════════════════════════════════════════════════════
+function onWeightData(event){
+  const bytes=new Uint8Array(event.target.value.buffer);
+  const hex=Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join(' ');
+  decodeCount++;
+  // (debug output removed)
+  if(hex!==lastRawHex){
+    log(`RX [${bytes.length}B]: ${hex}`);
+    lastRawHex=hex;
+  }
+  const g=decodeWeight(bytes);
+  if(g!==null){
+    rawWeight=g;
+    updateWeightDisplay();
+    updateFlowRate();
+  }
+}
+
+function decodeWeight(b){
+  if(b.length<4) return null;
+  let signNeg=false, digitStart=-1, digitLen=0;
+  for(let i=0;i<b.length;i++){
+    if(b[i]>=0x30&&b[i]<=0x39){
+      if(digitStart===-1){ digitStart=i; if(i>0&&b[i-1]===0x2D) signNeg=true; }
+      digitLen++;
+    } else {
+      if(digitLen>=4) break;
+      digitStart=-1; digitLen=0; signNeg=false;
+    }
+  }
+  if(digitStart!==-1&&digitLen>=4){
+    let str='';
+    for(let i=digitStart;i<digitStart+digitLen&&i<b.length;i++){
+      if(b[i]>=0x30&&b[i]<=0x39) str+=String.fromCharCode(b[i]); else break;
+    }
+    const raw=parseInt(str,10);
+    if(!isNaN(raw)){
+      const divisor=str.length>=6?100:10;
+      const g=(signNeg?-1:1)*raw/divisor;
+      if(g>=-2500&&g<=2500){
+  // (debug output removed)
+        return g;
+      }
+    }
+  }
+  try{
+    const text=new TextDecoder('utf-8').decode(b).trim();
+    const match=text.match(/(-?\d{1,4}(?:\.\d)?)/);
+  // (debug output removed)
+  }catch(e){}
+  const offsets=[{o:1,desc:'LE b1'},{o:1,be:true,desc:'BE b1'},{o:3,desc:'LE b3'},{o:3,be:true,desc:'BE b3'},{o:2,desc:'LE b2'},{o:2,be:true,desc:'BE b2'}];
+  for(const {o,be,desc} of offsets){
+    if(b.length<o+2) continue;
+    let r16=be?((b[o]<<8)|b[o+1]):(b[o]|(b[o+1]<<8));
+    if(r16>32767) r16-=65536;
+    const w=r16/10;
+  // (debug output removed)
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TARE
+// ═══════════════════════════════════════════════════════════════
+async function doTare(){
+  const btn=document.getElementById('tareBtn');
+  if(taringLock) return;
+
+  // Fast path — known working command
+  if(probedCmd&&writeChar){
+    taringLock=true; btn.disabled=true;
+    btn.classList.remove('success','fail','sending'); btn.classList.add('sending'); btn.textContent='TARE...';
+    flashPulse();
+    const bytes=probedCmd.hex.split(/\s+/).filter(Boolean).map(h=>parseInt(h,16));
+    const cmd=new Uint8Array(bytes);
+    let ok=false;
+    for(let attempt=1;attempt<=3;attempt++){
+      try{
+        if(writeChar.properties.writeWithoutResponse) await writeChar.writeValueWithoutResponse(cmd);
+        else await writeChar.writeValue(cmd);
+        ok=true; break;
+      }catch(e){ log(`  write err (attempt ${attempt}): ${e.message}`,'err'); if(attempt<3) await _delay(200); }
+    }
+    await _delay(350); tareOffset=rawWeight; updateWeightDisplay();
+    if(btnResetTimer){ clearTimeout(btnResetTimer); btnResetTimer=null; }
+    btn.classList.remove('sending'); btn.classList.add(ok?'success':'fail'); btn.textContent=ok?'✓ TARE':'✗ TARE';
+    if(!ok){ log('BLE write failed — check writeChar properties','err'); }
+    btnResetTimer=setTimeout(()=>{ btn.classList.remove('success','fail'); btn.textContent='TARE'; btnResetTimer=null; }, 800);
+    btn.disabled=false; taringLock=false; return;
+  }
+
+  // No BLE write channel — software offset only
+  if(!writeChar){
+    tareOffset=rawWeight; updateWeightDisplay(); flashPulse();
+    btn.classList.remove('success','fail','sending'); void btn.offsetWidth; btn.classList.add('success'); btn.textContent='✓ TARE';
+    if(btnResetTimer) clearTimeout(btnResetTimer);
+    btnResetTimer=setTimeout(()=>{ btn.classList.remove('success'); btn.textContent='TARE'; btnResetTimer=null; }, 800);
+    return;
+  }
+
+  // Probe path — find working tare command
+  taringLock=true; btn.disabled=true; btn.classList.add('sending'); btn.textContent='SCAN...'; flashPulse();
+  log('Running tare probe...','warn');
+  await _runProbeForTare();
+
+  if(probedCmd){
+    btn.textContent='TARE...';
+    const bytes=probedCmd.hex.split(/\s+/).filter(Boolean).map(h=>parseInt(h,16));
+    const cmd=new Uint8Array(bytes);
+    let ok=false;
+    for(let attempt=1;attempt<=3;attempt++){
+      try{
+        if(writeChar.properties.writeWithoutResponse) await writeChar.writeValueWithoutResponse(cmd);
+        else await writeChar.writeValue(cmd);
+        ok=true; break;
+      }catch(e){ if(attempt<3) await _delay(200); }
+    }
+    await _delay(350); tareOffset=rawWeight; updateWeightDisplay();
+    btn.classList.remove('sending'); btn.classList.add(ok?'success':'fail'); btn.textContent=ok?'✓ TARE':'✗ TARE';
+    saveProbedCmd();
+  } else {
+    // Probe sent commands but no weight response detected (scale may have been at 0)
+    // Do software tare and mark as partial
+    tareOffset=rawWeight; updateWeightDisplay();
+    btn.classList.remove('sending'); btn.classList.add('fail'); btn.textContent='~ TARE';
+    log('Probe: no weight response detected — scale may be at 0. Software tare applied. Press TARE again with weight on scale to calibrate BLE command.','warn');
+  }
+  if(btnResetTimer) clearTimeout(btnResetTimer);
+  btnResetTimer=setTimeout(()=>{ btn.classList.remove('success','fail','sending'); btn.textContent='TARE'; btnResetTimer=null; }, 1500);
+  btn.disabled=false; taringLock=false;
+}
+
+async function _runProbeForTare(){
+  let firstSentCmd=null; // fallback if no weight delta detected
+
+  for(let i=0;i<PROBE_CMDS.length;i++){
+    const cmd=PROBE_CMDS[i];
+    const weightBefore=rawWeight;
+    const bytes=cmd.hex.split(/\s+/).map(h=>parseInt(h,16));
+    const buf=new Uint8Array(bytes);
+    let sent=false;
+    try{
+      if(writeChar.properties.writeWithoutResponse) await writeChar.writeValueWithoutResponse(buf);
+      else await writeChar.writeValue(buf);
+      sent=true;
+      if(!firstSentCmd) firstSentCmd=cmd; // remember first sendable command
+      log(`  → Probe sent: [${cmd.label}]`);
+    }catch(e){ log(`  ✗ Probe [${cmd.label}] write failed: ${e.message}`,'err'); }
+
+    if(sent){
+      for(let t=0;t<15;t++){
+        await _delay(100);
+        const delta=Math.abs(rawWeight-weightBefore);
+        // threshold: >1g change OR went from >2g to near zero
+        if(delta>1.0||(weightBefore>2&&rawWeight<0.5)){
+          probedCmd={hex:cmd.hex,label:cmd.label};
+          log(`★ Tare probe: [${cmd.label}] confirmed (Δ${delta.toFixed(1)}g)`, 'ok');
+          await _delay(200); tareOffset=rawWeight; return;
+        }
+      }
+      await _delay(300);
+    }
+  }
+
+  // No weight response detected — use first successfully-sent command as best-effort
+  if(firstSentCmd){
+    probedCmd={hex:firstSentCmd.hex, label:firstSentCmd.label};
+    log(`★ Tare probe: using [${firstSentCmd.label}] as best-effort (no weight delta detected — scale may have been at 0)`, 'warn');
+    await _delay(150); tareOffset=rawWeight;
+  } else {
+    log('Probe: no commands could be sent — writeChar may not support writing', 'err');
+  }
+}
+
+function saveProbedCmd(){
+  try{ if(probedCmd) localStorage.setItem('na8awi_probed_cmd', JSON.stringify(probedCmd)); }catch(e){}
+}
+function loadProbedCmd(){
+  try{
+    const v=localStorage.getItem('na8awi_probed_cmd');
+    if(v){ probedCmd=JSON.parse(v); log(`Restored tare command: [${probedCmd.label}] from last session`,'ok'); }
+  }catch(e){}
+}
+
+function _delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function flashPulse(){
+  const ring=document.getElementById('weightRing');
+  const ex=ring.querySelector('.pulse-overlay'); if(ex) ex.remove();
+  const el=document.createElement('div'); el.className='pulse-overlay'; ring.appendChild(el);
+  el.addEventListener('animationend',()=>el.remove());
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FLOW RATE
+// ═══════════════════════════════════════════════════════════════
+function updateFlowRate(){
+  if(autoStartArmed&&!timerRunning){
+    const delta=(rawWeight-tareOffset)-autoStartBaseline;
+    if(delta>=AUTO_TRIGGER_G){ autoStartArmed=false; startTimer(); setAutoBtn('active'); log('★ Auto-start: pour detected','ok'); }
+  }
+  if(!timerRunning) return;
+  const now=Date.now(), dt=(now-lastFlowTime)/1000;
+  if(dt>0&&dt<2){
+    const rate=(rawWeight-lastFlowWeight)/dt;
+    if(rate>=0&&rate<20){ flowWindow.push(rate); if(flowWindow.length>10) flowWindow.shift(); }
+  }
+  lastFlowWeight=rawWeight; lastFlowTime=now;
+  updateFlowDisplay();
+  updateFlowGuide();
+  updateStepProgress();
+  recordChartPoint();
+}
+
+function updateFlowDisplay(){
+  const el=document.getElementById('flowVal');
+  if(!connected||!timerRunning||!flowWindow.length){ el.textContent='--'; el.classList.remove('active'); return; }
+  const avg=(flowWindow.reduce((a,b)=>a+b,0)/flowWindow.length).toFixed(1);
+  el.textContent=avg;
+  el.classList.add('active');
+  const ow=document.getElementById('overlayWeight');
+  const of_=document.getElementById('overlayFlow');
+  if(ow) ow.textContent=(rawWeight-tareOffset).toFixed(1);
+  if(of_) of_.textContent=avg;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════════════════════════
+function toggleTimer(){ timerRunning?stopTimer():startTimer(); }
+function startTimer(){
+  timerRunning=true; timerStart=Date.now()-timerMs;
+  document.getElementById('playBtn').classList.add('play-active');
+  document.getElementById('playIcon').style.display='none';
+  document.getElementById('pauseIcon').style.display='';
+  document.getElementById('doneBtn').style.display='flex';
+  document.getElementById('chartLiveOverlay').style.display='block';
+  lockRecipeUI(true);
+  tickTimer();
+}
+function stopTimer(){
+  timerRunning=false; cancelAnimationFrame(timerRAF);
+  document.getElementById('playBtn').classList.remove('play-active');
+  document.getElementById('playIcon').style.display='';
+  document.getElementById('pauseIcon').style.display='none';
+  updateFlowDisplay();
+  if(autoStartEnabled) setTimeout(()=>{ if(autoStartEnabled) armAutoStart(); }, 800);
+}
+
+function lockRecipeUI(locked){
+  document.querySelectorAll('.recipe-chip').forEach(c=>c.classList.toggle('locked', locked));
+  document.querySelectorAll('.nudge-btn').forEach(btn=>{
+    const isTemp = btn.getAttribute('onclick')&&btn.getAttribute('onclick').includes('Temp');
+    if(!isTemp) btn.classList.toggle('locked', locked);
+  });
+  const addBtn=document.getElementById('chipAddBtn');
+  if(addBtn) addBtn.classList.toggle('locked', locked);
+  const badge = document.getElementById('brewLockBadge');
+  if(badge) badge.classList.toggle('show', locked);
+}
+function tickTimer(){
+  timerMs=Date.now()-timerStart;
+  const total=Math.floor(timerMs/1000), m=Math.floor(total/60), s=total%60;
+  [Math.floor(m/10),m%10,Math.floor(s/10),s%10].forEach((d,i)=>{ document.getElementById('d'+i).textContent=d; });
+  timerRAF=requestAnimationFrame(tickTimer);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WEIGHT DISPLAY
+// ═══════════════════════════════════════════════════════════════
+function updateWeightDisplay(){
+  const iEl=document.getElementById('wInt'), dEl=document.getElementById('wDot'), dcEl=document.getElementById('wDec');
+  if(!connected){
+    iEl.textContent='0'; dEl.textContent='.'; dcEl.textContent='0';
+    [iEl,dEl,dcEl].forEach(e=>e.classList.remove('on'));
+    updateProgressRing(0, 0);
+    return;
+  }
+  const v=rawWeight-tareOffset;
+  const neg=v<0, absV=Math.abs(v);
+  const str=absV.toFixed(1);
+  const [ip,dp]=str.split('.');
+  iEl.textContent=(neg?'-':'')+ip;
+  dcEl.textContent=dp;
+  iEl.style.fontSize=(ip.length>=4||(neg&&ip.length>=3))?'36px':'';
+  [iEl,dEl,dcEl].forEach(e=>e.classList.add('on'));
+  _refreshBrewDisplay(v);
+  // Progress ring
+  const targetYield = brewDose && brewTargetRatio ? brewDose * brewTargetRatio : 0;
+  updateProgressRing(Math.max(0, v), targetYield);
+}
+
+function updateProgressRing(current, target){
+  const ring=document.getElementById('progressRing');
+  if(!ring) return;
+  const circumference=666; // 2*π*106 ≈ 666
+  if(target<=0){ ring.style.strokeDashoffset=circumference; ring.style.stroke='rgba(232,201,122,0)'; return; }
+  const pct=Math.min(1, current/target);
+  const offset=circumference*(1-pct);
+  ring.style.strokeDashoffset=offset;
+  const col = pct>=1?'rgba(94,203,138,0.7)':pct>0.85?'rgba(232,201,122,0.6)':'rgba(232,201,122,0.4)';
+  ring.style.stroke=col;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTO START
+// ═══════════════════════════════════════════════════════════════
+function toggleAutoStart(){
+  autoStartEnabled=!autoStartEnabled;
+  if(autoStartEnabled){ armAutoStart(); } else { disarmAutoStart(); }
+}
+function armAutoStart(){
+  if(timerRunning) return;
+  if(autoArmTimer) clearTimeout(autoArmTimer);
+  setAutoBtn('arming');
+  autoArmTimer=setTimeout(()=>{
+    autoStartBaseline=rawWeight-tareOffset;
+    autoStartArmed=true;
+    setAutoBtn('armed');
+    log('Auto-start armed (baseline: '+autoStartBaseline.toFixed(1)+'g)','ok');
+  }, AUTO_STABLE_MS);
+}
+function disarmAutoStart(){
+  autoStartArmed=false;
+  if(autoArmTimer){ clearTimeout(autoArmTimer); autoArmTimer=null; }
+  setAutoBtn('off');
+}
+function setAutoBtn(state){
+  const btn=document.getElementById('autoBtn');
+  btn.classList.remove('auto-armed','auto-active');
+  if(state==='armed'||state==='arming') btn.classList.add('auto-armed');
+  if(state==='active') btn.classList.add('auto-active');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BREW PARAMS
+// ═══════════════════════════════════════════════════════════════
+function nudgeDose(delta){
+  brewDose=Math.max(1, +((brewDose||15)+delta).toFixed(1));
+  refreshParamDisplays(); saveParams();
+}
+function nudgeRatio(delta){
+  brewTargetRatio=Math.max(1, +((brewTargetRatio||15)+delta).toFixed(1));
+  refreshParamDisplays(); saveParams();
+}
+function nudgeTemp(delta){
+  brewTemp=Math.max(60, Math.min(100, +((brewTemp||93)+delta).toFixed(0)));
+  refreshParamDisplays(); saveParams();
+}
+function saveParams(){
+  try{ localStorage.setItem('na8awi_params', JSON.stringify({dose:brewDose,ratio:brewTargetRatio,temp:brewTemp})); }catch(e){}
+}
+function loadParams(){
+  try{ const v=localStorage.getItem('na8awi_params'); return v?JSON.parse(v):null; }catch(e){ return null; }
+}
+function refreshParamDisplays(){
+  const de=document.getElementById('doseDisplay'), te=document.getElementById('tempDisplay'), re=document.getElementById('ratioTargetDisplay');
+  if(de){ de.textContent=brewDose?brewDose.toFixed(1):'–'; de.classList.toggle('set', !!brewDose); }
+  if(te){ te.textContent=brewTemp?brewTemp.toFixed(0):'–'; te.classList.toggle('set', !!brewTemp); }
+  if(re){ re.textContent=brewTargetRatio?brewTargetRatio.toFixed(1):'–'; re.classList.toggle('set', !!brewTargetRatio); }
+  _refreshBrewDisplay(rawWeight-tareOffset);
+}
+
+function _refreshBrewDisplay(yield_){
+  const ratioEl=document.getElementById('ratioDisplay');
+  const gramsEl=document.getElementById('ratioGrams');
+  const dose=brewDose, target=brewTargetRatio;
+
+  if(dose&&dose>0&&yield_>0){
+    const actualRatio=yield_/dose;
+    if(ratioEl) ratioEl.textContent=actualRatio.toFixed(2);
+    if(gramsEl) gramsEl.textContent=`${yield_.toFixed(1)} g / ${dose.toFixed(1)} g`;
+    if(ratioEl){
+      // Color based on SCA range — consistent with what resume will score
+      let rc;
+      if(actualRatio>=15.0&&actualRatio<=16.7)      rc='var(--green)';   // SCA golden → full marks
+      else if(actualRatio>=14.5&&actualRatio<=18.0) rc='var(--accent)';  // acceptable range → partial marks
+      else                                           rc='var(--red)';     // out of range → penalised
+      ratioEl.style.color=rc;
+    }
+  } else {
+    if(ratioEl){ ratioEl.textContent='–'; ratioEl.style.color='rgba(255,255,255,0.18)'; }
+    if(gramsEl) gramsEl.textContent=`– g / ${dose?dose.toFixed(1):'–'} g`;
+  }
+
+  // Yield progress bar
+  if(dose&&dose>0&&target){
+    const targetYield=dose*target;
+    const progress=Math.min(1,Math.max(0,yield_/targetYield));
+    const ySection=document.getElementById('yieldSection');
+    if(ySection) ySection.style.display='block';
+    const yBar=document.getElementById('yieldBar');
+    const yTarget=document.getElementById('yieldTargetVal');
+    if(yBar) yBar.style.width=Math.round(progress*100)+'%';
+    if(yBar){
+      if(progress>=1) yBar.style.background='linear-gradient(90deg, var(--green), var(--blue))';
+      else if(progress>0.85) yBar.style.background='linear-gradient(90deg, var(--accent), var(--red))';
+      else yBar.style.background='linear-gradient(90deg, var(--accent), var(--purple))';
+    }
+    if(yTarget) yTarget.textContent='target: '+targetYield.toFixed(0)+'g';
+  } else {
+    const ySection=document.getElementById('yieldSection');
+    if(ySection) ySection.style.display='none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════
+function resetAll(){
+  stopTimer(); timerMs=0;
+  [0,1,2,3].forEach(i=>document.getElementById('d'+i).textContent=0);
+  rawWeight=0; tareOffset=0; flowWindow=[]; lastFlowWeight=0; lastFlowTime=Date.now();
+  if(autoStartEnabled){ autoStartArmed=false; autoStartBaseline=0; if(autoArmTimer){ clearTimeout(autoArmTimer); autoArmTimer=null; } setAutoBtn('enabled'); }
+  shotSummary=null;
+  document.getElementById('doneBtn').style.display='none';
+  document.getElementById('chartLiveOverlay').style.display='none';
+  document.getElementById('summaryStrip').classList.remove('show');
+  document.getElementById('verdictCard').classList.remove('show');
+  document.getElementById('btnSaveSession').style.display='none';
+  document.getElementById('btnDone').style.display='none';
+  currentStep=0;
+  lockRecipeUI(false); // unlock recipe & params
+  renderStepList();
+  clearChart();
+  updateWeightDisplay(); updateFlowDisplay();
+  switchTab('brew');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FINISH BREWING
+// ═══════════════════════════════════════════════════════════════
+function finishBrewing(){
+  if(!timerRunning&&timerMs===0) return;
+  if(timerRunning) stopTimer();
+
+  const totalSec=Math.round(timerMs/1000);
+  const finalWeight=rawWeight-tareOffset;
+  const fValsAll=chartData.map(d=>d.f).filter(v=>v>0);
+  const avgFlow=fValsAll.length?(fValsAll.reduce((a,b)=>a+b,0)/fValsAll.length):0;
+  const peakFlow=fValsAll.length?Math.max(...fValsAll):0;
+  const ratio=(brewDose&&brewDose>0&&finalWeight>0)?finalWeight/brewDose:null;
+
+  shotSummary={
+    time:totalSec, weight:finalWeight, avgFlow, peakFlow, ratio,
+    dose:brewDose, targetRatio:brewTargetRatio, temp:brewTemp,
+    recipe:activeRecipe?activeRecipe.id:'unknown',
+    chartData:[...chartData]
+  };
+
+  // Render summary (chart already present on brew tab)
+  renderSummary(shotSummary);
+  setTimeout(()=>{ document.getElementById('summaryStrip').scrollIntoView({behavior:'smooth',block:'nearest'}); }, 150);
+  log(`Brew done: ${finalWeight.toFixed(1)}g · ${totalSec}s · avg ${avgFlow.toFixed(2)}g/s`, 'ok');
+}
+
+function renderSummary(s){
+  // Summary strip
+  const strip=document.getElementById('summaryStrip');
+  strip.classList.add('show');
+  const sumTimeFmt=s.time<60?s.time+'s':`${Math.floor(s.time/60)}:${String(s.time%60).padStart(2,'0')}`;
+  document.getElementById('sumWeight').textContent=s.weight.toFixed(1);
+  document.getElementById('sumTime').textContent=sumTimeFmt;
+  document.getElementById('sumAvgFlow').textContent=s.avgFlow.toFixed(2);
+
+  // Score
+  const {score,verdict,grade,gradeColor,breakdown,noteObjs}=calcScore(s);
+  document.getElementById('sumScore').textContent=score;
+  document.getElementById('sumScore').style.color=score>=80?'var(--green)':score>=60?'var(--accent)':'var(--red)';
+
+  // Verdict card
+  const card=document.getElementById('verdictCard');
+  card.classList.add('show');
+  document.getElementById('verdictScore').textContent=score;
+  document.getElementById('verdictScore').style.color=gradeColor;
+  document.getElementById('verdictGrade').textContent=`/ 100 · ${grade}`;
+  document.getElementById('verdictGrade').style.color=gradeColor;
+
+  const badge=document.getElementById('verdictBadge');
+  badge.textContent=verdict;
+  badge.style.background=score>=80?'rgba(94,203,138,0.1)':score>=60?'rgba(232,201,122,0.1)':'rgba(224,112,112,0.1)';
+  badge.style.color=gradeColor;
+  badge.style.border=`1px solid ${score>=80?'rgba(94,203,138,0.3)':score>=60?'rgba(232,201,122,0.3)':'rgba(224,112,112,0.3)'}`;
+
+  // Breakdown bars
+  const bdRows=[
+    {key:'ratio',label:t('bd_ratio'),color:'var(--accent)'},
+    {key:'time',label:t('bd_time'),color:'var(--green)'},
+    {key:'consist',label:t('bd_consist'),color:'var(--blue)'},
+    {key:'flow',label:t('bd_flow'),color:'var(--purple)'},
+    {key:'peak',label:t('bd_peak'),color:'var(--orange)'},
+    {key:'bloom',label:t('bd_bloom'),color:'var(--text-dim)'},
+  ];
+  const bdEl=document.getElementById('scaBreakdown');
+  bdEl.innerHTML=bdRows.map(r=>{
+    const b=breakdown[r.key];
+    const pct=(b.score/b.max*100).toFixed(0);
+    const barColor=b.flag==='pass'?'var(--green)':b.flag==='warn'?'var(--accent)':'var(--red)';
+    return `<div class="sca-row">
+      <div class="sca-label">${r.label}</div>
+      <div class="sca-bar-wrap"><div class="sca-bar" style="width:${pct}%;background:${barColor};"></div></div>
+      <div class="sca-pts" style="color:${barColor};">${b.score}/${b.max}</div>
+    </div>`;
+  }).join('')+`<hr class="sca-divider"/>
+  <div class="sca-total-row">
+    <div class="sca-total-label">TOTAL</div>
+    <div class="sca-total-bar-wrap"><div class="sca-total-bar" style="width:${score}%;background:${gradeColor};"></div></div>
+    <div class="sca-total-pts" style="color:${gradeColor};">${score}/100</div>
+  </div>`;
+
+  // Notes
+  const notesEl=document.getElementById('verdictNotes');
+  notesEl.innerHTML=noteObjs.map(n=>`<div class="verdict-note note-${n.flag}">${n.text}</div>`).join('');
+
+  document.getElementById('btnSaveSession').style.display='block';
+  document.getElementById('btnDone').style.display='block';
+}
+
+function calcScore(s){
+  const cd=s.chartData||[];
+  const fVals=cd.map(d=>d.f).filter(v=>v>0);
+
+  // ── Pulse pour detection ─────────────────────
+  // Identifikasi apakah teknik yang digunakan adalah multi-stage / pulse pour
+  // by counting pour stages separated by near-zero flow pauses
+  const PAUSE_THR=0.35;
+  let pourPhases=0, wasPouring=false;
+  let pauseDurations=[], pauseStart=0;
+  cd.forEach(d=>{
+    if(d.f>PAUSE_THR&&!wasPouring){ wasPouring=true; pourPhases++; if(pauseStart>0) pauseDurations.push(d.t-pauseStart); }
+    else if(d.f<=PAUSE_THR&&wasPouring){ wasPouring=false; pauseStart=d.t; }
+  });
+  const isPulsePour=pourPhases>=3;
+  const pulseTechName=pourPhases>=5?'multi-stage (≥5 fase)':pourPhases>=3?`${pourPhases}-stage pulse pour`:'continuous pour';
+
+  // ══ 1. BREW RATIO · 25 pts ══════════════════
+  let ratioScore=0, ratioFlag='fail', ratioNote='';
+  if(!s.ratio||!s.dose){
+    ratioScore=0; ratioFlag='fail';
+    ratioNote=currentLang==='id'?'⚠ <span class="note-key">RASIO SEDUH [0/25]</span> — Dosis belum diset. Rasio tidak dapat dievaluasi. Set parameter dosis sebelum menyeduh.':'⚠ <span class="note-key">BREW RATIO [0/25]</span> — Dose not set. Ratio cannot be evaluated. Set the dose parameter before brewing.';
+  } else {
+    const r=s.ratio;
+    if(r>=15.0&&r<=16.7){
+      ratioScore=25; ratioFlag='pass';
+      ratioNote=currentLang==='id'?`✓ <span class="note-key">RASIO SEDUH [25/25]</span> — 1:${r.toFixed(1)} tepat di Rasio Emas SCA (1:15–1:16.7). Estimasi TDS 1.15–1.35%, extraction yield ~18–22%. Profil rasa: seimbang antara manis, body, dan kecerahan. Tidak perlu penyesuaian.`:`✓ <span class="note-key">BREW RATIO [25/25]</span> — 1:${r.toFixed(1)} squarely in the SCA Golden Ratio (1:15–1:16.7). Estimated TDS 1.15–1.35%, extraction yield ~18–22%. Flavor profile: balanced sweetness, body, and brightness. No adjustment needed.`;
+    } else if(r>=14.5&&r<15.0){
+      ratioScore=20; ratioFlag='warn';
+      ratioNote=currentLang==='id'?`△ <span class="note-key">RASIO SEDUH [20/25]</span> — 1:${r.toFixed(1)} sedikit pekat. Estimasi TDS >1.35%. Potensi: body tebal tapi risiko kepahitan di akhir. Pertimbangkan tambah yield ~${(s.dose*15-s.weight).toFixed(0)}g.`:`△ <span class="note-key">BREW RATIO [20/25]</span> — 1:${r.toFixed(1)} slightly concentrated. Estimated TDS >1.35%. Potential: thick body but increased risk of late-cup bitterness. Consider raising yield by ~${(s.dose*15-s.weight).toFixed(0)}g.`;
+    } else if(r>16.7&&r<=18.0){
+      ratioScore=17; ratioFlag='warn';
+      ratioNote=currentLang==='id'?`△ <span class="note-key">RASIO SEDUH [17/25]</span> — 1:${r.toFixed(1)} melewati batas atas SCA. TDS <1.15%, body tipis. Risiko: mouthfeel berair, keasaman tanpa rasa manis. Kurangi yield ~${(s.weight-s.dose*16.7).toFixed(0)}g.`:`△ <span class="note-key">BREW RATIO [17/25]</span> — 1:${r.toFixed(1)} exceeds SCA upper limit. TDS <1.15%, thin body. Risk: watery mouthfeel, acidity without sweetness. Reduce yield by ~${(s.weight-s.dose*16.7).toFixed(0)}g.`;
+    } else if(r>=13.0&&r<14.5){
+      ratioScore=8; ratioFlag='fail';
+      ratioNote=currentLang==='id'?`✕ <span class="note-key">RASIO SEDUH [8/25]</span> — 1:${r.toFixed(1)} terlalu pekat, jauh di luar SCA. TDS kemungkinan >1.5%. Tambah yield +${(s.dose*15.5-s.weight).toFixed(0)}g.`:`✕ <span class="note-key">BREW RATIO [8/25]</span> — 1:${r.toFixed(1)} far too concentrated, well outside SCA range. TDS likely >1.5%. Increase yield by +${(s.dose*15.5-s.weight).toFixed(0)}g.`;
+    } else if(r>18.0&&r<=20.0){
+      ratioScore=7; ratioFlag='fail';
+      ratioNote=currentLang==='id'?`✕ <span class="note-key">RASIO SEDUH [7/25]</span> — 1:${r.toFixed(1)} terlalu encer. TDS <1.0%, flat, hollow finish. Kurangi yield atau tambah dosis minimal ${(s.weight/15-s.dose).toFixed(1)}g.`:`✕ <span class="note-key">BREW RATIO [7/25]</span> — 1:${r.toFixed(1)} too dilute. TDS <1.0%, flat, hollow finish. Reduce yield or add at least ${(s.weight/15-s.dose).toFixed(1)}g more dose.`;
+    } else {
+      ratioScore=0; ratioFlag='fail';
+      ratioNote=currentLang==='id'?`✕✕ <span class="note-key">RASIO SEDUH [0/25]</span> — 1:${r.toFixed(1)} di luar semua parameter evaluasi. Kalibrasi ulang: dosis, gilingan, target yield.`:`✕✕ <span class="note-key">BREW RATIO [0/25]</span> — 1:${r.toFixed(1)} outside all evaluable parameters. Recalibrate fundamentals: dose, grind, and target yield.`;
+    }
+  }
+
+  // ══ 2. BREW TIME · 20 pts ═══════════════════
+  let timeScore=0, timeFlag='fail', timeNote='';
+  const sec=s.time;
+  const is46=s.recipe==='4-6';
+  const isHoff=s.recipe==='hoffmann';
+  const tLo=is46?240:isHoff?195:180;
+  const tHi=is46?300:isHoff?255:270;
+  const tDev=sec<tLo?tLo-sec:sec>tHi?sec-tHi:0;
+  const tFmt=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;
+  const tIdealFmt=`${Math.floor(tLo/60)}:${String(tLo%60).padStart(2,'0')}–${Math.floor(tHi/60)}:${String(tHi%60).padStart(2,'0')}`;
+  // Grind steps: proportional & conservative, max 3 steps — evaluate before adjusting further
+  const grindSteps=Math.max(1,Math.min(3,Math.round(tDev/12)));
+  if(tDev===0){
+    timeScore=20; timeFlag='pass';
+    timeNote=currentLang==='id'?`✓ <span class="note-key">WAKTU SEDUH [20/20]</span> — ${tFmt} dalam range ideal ${tIdealFmt}. Kinetika ekstraksi optimal: senyawa manis dan asam terekstrak secara proporsional.`:`✓ <span class="note-key">BREW TIME [20/20]</span> — ${tFmt} within ideal range ${tIdealFmt}. Extraction kinetics optimal: sweet and acidic compounds extracted proportionally.`;
+  } else if(tDev<=15){
+    timeScore=17; timeFlag='pass';
+    const dir=sec<tLo?'slightly fast':'slightly slow';
+    timeNote=currentLang==='id'?`✓ <span class="note-key">WAKTU SEDUH [17/20]</span> — ${tFmt} (${sec<tLo?'sedikit cepat':'sedikit lambat'}, deviasi ${tDev}s). Masih dalam toleransi. ${sec<tLo?'Coba giling setengah step lebih halus':'Coba giling setengah step lebih kasar'} untuk mendekati ideal.`:`✓ <span class="note-key">BREW TIME [17/20]</span> — ${tFmt} (${dir}, deviation ${tDev}s). Still within tolerance. ${sec<tLo?'Try half a step finer':'Try half a step coarser'} to approach ideal.`;
+  } else if(tDev<=45){
+    timeScore=11; timeFlag='warn';
+    if(sec<tLo){
+      timeNote=currentLang==='id'?`△ <span class="note-key">WAKTU SEDUH [11/20]</span> — ${tFmt}, deviasi ${tDev}s. Seduhan terlalu cepat — risiko under-extraction: asam, berumput. Coba giling ${grindSteps} step lebih halus, evaluasi sebelum menyesuaikan lebih jauh. Perhatikan juga distribusi bloom.`:`△ <span class="note-key">BREW TIME [11/20]</span> — ${tFmt}, deviation ${tDev}s. Brew too fast — risk of under-extraction: sour, grassy notes. Try grinding ${grindSteps} step${grindSteps>1?'s':''} finer, then evaluate before adjusting further. Also check bloom distribution.`;
+    } else {
+      timeNote=currentLang==='id'?`△ <span class="note-key">WAKTU SEDUH [11/20]</span> — ${tFmt}, deviasi ${tDev}s. Seduhan terlalu lambat — risiko over-extraction: pahit, finish kasar. Coba giling ${grindSteps} step lebih kasar.`:`△ <span class="note-key">BREW TIME [11/20]</span> — ${tFmt}, deviation ${tDev}s. Brew too slow — risk of over-extraction: bitter, harsh finish. Try grinding ${grindSteps} step${grindSteps>1?'s':''} coarser.`;
+    }
+  } else if(tDev<=90){
+    timeScore=5; timeFlag='fail';
+    const dir=sec<tLo?'Premature extraction — complex compounds had no time to dissolve. Sour, thin body, short finish.':'Extraction stalled too long — bitter compounds dominate. Astringency, woody aftertaste.';
+    timeNote=currentLang==='id'?`✕ <span class="note-key">WAKTU SEDUH [5/20]</span> — ${tFmt}, deviasi ${tDev}s. ${sec<tLo?'Extraction prematur — senyawa kompleks belum sempat larut. Asam, body tipis.':'Ekstraksi terlalu panjang — senyawa pahit dominan. Astringency, aftertaste kayu.'} Giling ${Math.min(4,Math.round(tDev/15))} step ${sec<tLo?'lebih halus':'lebih kasar'}.`:`✕ <span class="note-key">BREW TIME [5/20]</span> — ${tFmt}, deviation ${tDev}s. ${dir} Grind ${Math.min(4,Math.round(tDev/15))} step${Math.min(4,Math.round(tDev/15))>1?'s':''} ${sec<tLo?'finer':'coarser'}.`;
+  } else {
+    timeScore=0; timeFlag='fail';
+    const dir=sec<tLo?'Total flush — water passed through bed without extraction. Check bed prep and distribution.':'Completely stalled — likely severe channeling or grind too fine. Bed collapse.';
+    timeNote=currentLang==='id'?`✕✕ <span class="note-key">WAKTU SEDUH [0/20]</span> — ${tFmt}. ${sec<tLo?'Flush total — air melewati bed tanpa ekstraksi. Periksa persiapan bed.':'Berhenti total — kemungkinan channeling parah atau gilingan terlalu halus. Bed collapse.'}`:`✕✕ <span class="note-key">BREW TIME [0/20]</span> — ${tFmt}. ${dir}`;
+  }
+
+  // ══ 3. FLOW CONSISTENCY · 20 pts ════════════
+  // Context-aware: pulse pour is evaluated more fairly
+  let consistScore=0, consistFlag='fail', consistNote='';
+  if(fVals.length<5){
+    consistScore=5; consistFlag='warn';
+    consistNote=currentLang==='id'?'⚠ <span class="note-key">KONSISTENSI [5/20]</span> — Sampel data aliran tidak cukup untuk analisis statistik yang valid.':'⚠ <span class="note-key">CONSISTENCY [5/20]</span> — Insufficient flow data samples for valid statistical analysis.';
+  } else {
+    const mean=fVals.reduce((a,b)=>a+b,0)/fVals.length;
+    const sd=Math.sqrt(fVals.reduce((a,v)=>a+Math.pow(v-mean,2),0)/fVals.length);
+    const cv=mean>0?sd/mean:999;
+    const cvPct=(cv*100).toFixed(1);
+    if(isPulsePour){
+      // For pulse pour, high CV is largely caused by pauses between stages —
+      // which are part of the technique, not errors. Consistency is evaluated
+      // based on stability within each stage.
+      if(cv<=0.35){
+        consistScore=16; consistFlag='pass';
+        consistNote=currentLang==='id'?`✓ <span class="note-key">KONSISTENSI [16/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Terdeteksi ${pourPhases} fase tuang (${pulseTechName}). Konsistensi antar-fase baik. Pertahankan ritme dan tinggi kettle yang seragam di setiap fase.`:`✓ <span class="note-key">CONSISTENCY [16/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). ${pourPhases} pour stages detected (${pulseTechName}). Inter-stage consistency is good. Maintain steady rhythm and uniform kettle height across each stage.`;
+      } else if(cv<=0.55){
+        consistScore=10; consistFlag='warn';
+        consistNote=currentLang==='id'?`△ <span class="note-key">KONSISTENSI [10/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Terdeteksi ${pourPhases} fase tuang (${pulseTechName}). Catatan: CV tinggi sebagian wajar pada pulse pour karena jeda antar-fase. Fokus pada kestabilan aliran dalam setiap fase — jaga tinggi kettle konsisten.`:`△ <span class="note-key">CONSISTENCY [10/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). ${pourPhases} pour stages detected (${pulseTechName}). Note: elevated CV is partly expected in pulse pour due to pauses between stages. Focus on stable flow within each stage — keep kettle height consistent.`;
+      } else {
+        consistScore=6; consistFlag='warn';
+        consistNote=currentLang==='id'?`△ <span class="note-key">KONSISTENSI [6/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Terdeteksi ${pourPhases} fase tuang (${pulseTechName}). Variasi aliran dalam setiap fase masih besar. Pastikan aliran kettle stabil dalam satu fase sebelum berhenti — latih kecepatan tuang yang merata.`:`△ <span class="note-key">CONSISTENCY [6/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). ${pourPhases} pour stages detected (${pulseTechName}). Flow variation within each stage is still high. Ensure kettle flow is stable within a single stage before stopping — practice even pour speed throughout.`;
+      }
+    } else {
+      // Continuous pour — evaluasi penuh
+      if(cv<=0.18){
+        consistScore=20; consistFlag='pass';
+        consistNote=currentLang==='id'?`✓ <span class="note-key">KONSISTENSI [20/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Kontrol tangan setara barista kompetisi internasional. Distribusi air sempurna — tidak ada area kering.`:`✓ <span class="note-key">CONSISTENCY [20/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Hand control matches international competition barista level. Water distribution perfect — no dry pockets.`;
+      } else if(cv<=0.30){
+        consistScore=15; consistFlag='pass';
+        consistNote=currentLang==='id'?`✓ <span class="note-key">KONSISTENSI [15/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Variasi minor dalam batas wajar. Fokus: pertahankan radius gerakan sirkuler konsisten, stabilkan sudut kettle.`:`✓ <span class="note-key">CONSISTENCY [15/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Minor variation within acceptable range. Focus: maintain consistent circular motion radius, stabilize kettle angle.`;
+      } else if(cv<=0.48){
+        consistScore=8; consistFlag='warn';
+        consistNote=currentLang==='id'?`△ <span class="note-key">KONSISTENSI [8/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Tuangan tidak stabil — akselerasi/deselerasi signifikan terdeteksi. Latih drip drill dengan gooseneck kettle, fokus pada tekanan jari yang konstan.`:`△ <span class="note-key">CONSISTENCY [8/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Unstable pour — significant acceleration/deceleration detected. Practice drip drills with a gooseneck kettle, focus on constant finger pressure.`;
+      } else {
+        consistScore=2; consistFlag='fail';
+        consistNote=currentLang==='id'?`✕ <span class="note-key">KONSISTENSI [2/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Tuangan sangat tidak konsisten. Saturasi tidak merata → ekstraksi parsial → ketidakseimbangan rasa parah. Latih teknik circular pour sebelum seduhan berikutnya.`:`✕ <span class="note-key">CONSISTENCY [2/20]</span> — CV ${cvPct}% (σ=${sd.toFixed(2)} g/s). Pour extremely inconsistent. Uneven saturation → partial extraction → severe flavor imbalance. Practice continuous circular pour technique before your next brew.`;
+      }
+    }
+  }
+
+  // ══ 4. AVG FLOW RATE · 15 pts ═══════════════
+  let flowScore=0, flowFlag='fail', flowNote='';
+  const af=s.avgFlow;
+  if(af>=3.0&&af<=5.5){
+    flowScore=15; flowFlag='pass';
+    flowNote=currentLang==='id'?`✓ <span class="note-key">LAJU ALIRAN [15/15]</span> — ${af.toFixed(2)} g/s. Dalam zona optimal SCA pour over. Aliran cukup untuk menciptakan turbulensi positif tanpa merusak struktur bed kopi. Pertahankan.`:`✓ <span class="note-key">AVG FLOW RATE [15/15]</span> — ${af.toFixed(2)} g/s. Within SCA optimal pour over zone. Flow sufficient for positive turbulence (agitation) without disrupting bed structure. Keep it up.`;
+  } else if((af>=2.5&&af<3.0)||(af>5.5&&af<=7.0)){
+    flowScore=10; flowFlag='warn';
+    const dir=currentLang==='id'?(af<3.0?`Sedikit lambat. Saturasi merata tapi risiko over-wetting di dasar filter.`:`Sedikit cepat. Agitasi berlebih — fine migrating ke filter, bisa menambah resistensi.`):(af<3.0?`Slightly slow. Even saturation but risk of over-wetting at filter base.`:`Slightly fast. Excessive agitation — fines migrating to filter, may increase resistance.`);
+    flowNote=currentLang==='id'?`△ <span class="note-key">LAJU ALIRAN [10/15]</span> — ${af.toFixed(2)} g/s. ${dir}`:`△ <span class="note-key">AVG FLOW RATE [10/15]</span> — ${af.toFixed(2)} g/s. ${dir}`;
+  } else if((af>=1.8&&af<2.5)||(af>7.0&&af<=9.0)){
+    flowScore=5; flowFlag='fail';
+    const dir=currentLang==='id'?(af<2.5?`Lambat — risiko over-extraction di zona kontak panjang. Astringency dari polifenol.`:`Cepat — waktu kontak air terlalu singkat. Under-extracted, asam, body tipis.`):(af<2.5?`Slow — risk of over-extraction in long contact zone. Astringency from polyphenols.`:`Fast — water contact time too short. Under-extracted, sour, thin body.`);
+    flowNote=currentLang==='id'?`✕ <span class="note-key">LAJU ALIRAN [5/15]</span> — ${af.toFixed(2)} g/s. ${dir}`:`✕ <span class="note-key">AVG FLOW RATE [5/15]</span> — ${af.toFixed(2)} g/s. ${dir}`;
+  } else {
+    flowScore=0; flowFlag='fail';
+    flowNote=currentLang==='id'?`✕✕ <span class="note-key">LAJU ALIRAN [0/15]</span> — ${af.toFixed(2)} g/s. Nilai ekstrem. Periksa: apakah kettle terkalibrasi? Apakah ukuran gilingan konsisten?`:`✕✕ <span class="note-key">AVG FLOW RATE [0/15]</span> — ${af.toFixed(2)} g/s. Extreme value. Check: is the kettle calibrated? Is grind size consistent?`;
+  }
+
+  // ══ 5. PEAK CONTROL · 10 pts ════════════════
+  let peakScore=0, peakFlag='fail', peakNote='';
+  const pf=s.peakFlow;
+  const pr=af>0?pf/af:0;
+  const spikeCount=fVals.filter(v=>v>af*2.2).length;
+  // For pulse pour, spikes at the start of each stage may be higher — adjust threshold
+  const spikeThreshold=isPulsePour?pourPhases*2:2;
+  if(pr<=1.8&&spikeCount<=spikeThreshold){
+    peakScore=10; peakFlag='pass';
+    peakNote=currentLang==='id'?`✓ <span class="note-key">KONTROL PUNCAK [10/10]</span> — Puncak ${pf.toFixed(2)} g/s (${pr.toFixed(2)}× rata-rata). Kontrol tekanan excellent. Tidak ada tanda channeling — distribusi air merata di seluruh permukaan bed.`:`✓ <span class="note-key">PEAK CONTROL [10/10]</span> — Peak ${pf.toFixed(2)} g/s (${pr.toFixed(2)}× avg). Pressure control excellent. No signs of channeling — even water distribution across entire bed surface.`;
+  } else if(pr<=2.5&&spikeCount<=spikeThreshold*2){
+    peakScore=7; peakFlag='warn';
+    peakNote=currentLang==='id'?`△ <span class="note-key">KONTROL PUNCAK [7/10]</span> — Puncak ${pf.toFixed(2)} g/s (${pr.toFixed(2)}× rata-rata), ${spikeCount} spike. Beberapa momen tuang agresif terdeteksi. Jaga kettle 3–5 cm dari permukaan bed, mulai dari tengah melingkar keluar.`:`△ <span class="note-key">PEAK CONTROL [7/10]</span> — Peak ${pf.toFixed(2)} g/s (${pr.toFixed(2)}× avg), ${spikeCount} spike. A few aggressive pour moments detected. Keep kettle 3–5 cm from bed surface, start from center spiraling outward.`;
+  } else if(pr<=3.5){
+    peakScore=3; peakFlag='fail';
+    peakNote=currentLang==='id'?`✕ <span class="note-key">KONTROL PUNCAK [3/10]</span> — Puncak ${pf.toFixed(2)} g/s (${pr.toFixed(2)}× rata-rata), ${spikeCount} spike. Banyak spike terdeteksi — indikasi channeling atau tuangan agresif di awal fase. Gangguan bed mengurangi efektivitas ekstraksi.`:`✕ <span class="note-key">PEAK CONTROL [3/10]</span> — Peak ${pf.toFixed(2)} g/s (${pr.toFixed(2)}× avg), ${spikeCount} spike. Multiple spikes detected — signs of channeling or aggressive pour at stage start. Bed disruption reduces extraction effectiveness.`;
+  } else {
+    peakScore=0; peakFlag='fail';
+    peakNote=currentLang==='id'?`✕✕ <span class="note-key">KONTROL PUNCAK [0/10]</span> — Puncak ${pf.toFixed(2)} g/s (${pr.toFixed(2)}× rata-rata). Spike ekstrem — air kemungkinan dituang sekaligus. Saturasi tak terkontrol → channeling parah.`:`✕✕ <span class="note-key">PEAK CONTROL [0/10]</span> — Peak ${pf.toFixed(2)} g/s (${pr.toFixed(2)}× avg). Extreme spike — water likely poured all at once. Uncontrolled saturation → severe channeling.`;
+  }
+
+  // ══ 6. BLOOM EXECUTION · 10 pts ═════════════
+  let bloomScore=0, bloomFlag='fail', bloomNote='';
+  const bloomPts=cd.filter(d=>d.t>0&&d.t<=55);
+  if(bloomPts.length<2){
+    bloomScore=5; bloomFlag='warn';
+    bloomNote=currentLang==='id'?'– <span class="note-key">BLOOM [5/10]</span> — Data fase bloom tidak cukup. Pastikan timer aktif sejak detik pertama menuang.':'– <span class="note-key">BLOOM [5/10]</span> — Insufficient bloom phase data. Ensure timer is active from the first second of pouring.';
+  } else {
+    const bloomFlows=bloomPts.map(d=>d.f).filter(v=>v>0);
+    const bloomAvg=bloomFlows.length?bloomFlows.reduce((a,b)=>a+b,0)/bloomFlows.length:0;
+    const bloomYield=bloomPts[bloomPts.length-1].w;
+    const expBloom=s.dose>0?s.dose*2.5:37;
+    // Detect whether a rest pause (bloom rest) occurred during the bloom phase
+    const hasBloomPause=bloomPts.some(d=>d.f<=PAUSE_THR);
+    const yieldLow=bloomYield<expBloom*0.60;
+    const yieldHigh=bloomYield>expBloom*1.60;
+    const bloomRatioOk=!yieldLow&&!yieldHigh;
+    const bloomFlowOk=bloomAvg>0&&bloomAvg<=4.5;
+    if(bloomFlowOk&&bloomRatioOk&&hasBloomPause){
+      bloomScore=10; bloomFlag='pass';
+      bloomNote=currentLang==='id'?`✓ <span class="note-key">BLOOM [10/10]</span> — Aliran bloom ${bloomAvg.toFixed(1)} g/s, yield ${bloomYield.toFixed(0)}g (target ~${expBloom.toFixed(0)}g). Jeda istirahat terdeteksi. Degassing CO₂ optimal — bed tersaturasi merata, fondasi ekstraksi solid.`:`✓ <span class="note-key">BLOOM [10/10]</span> — Flow bloom ${bloomAvg.toFixed(1)} g/s, yield ${bloomYield.toFixed(0)}g (target ~${expBloom.toFixed(0)}g). Rest pause detected. CO₂ degassing optimal — bed evenly saturated, solid extraction foundation.`;
+    } else if(bloomFlowOk&&bloomRatioOk&&!hasBloomPause){
+      bloomScore=6; bloomFlag='warn';
+      bloomNote=currentLang==='id'?`△ <span class="note-key">BLOOM [6/10]</span> — Aliran bloom ${bloomAvg.toFixed(1)} g/s, yield ${bloomYield.toFixed(0)}g. Bloom terdeteksi tapi jeda istirahat tidak ditemukan. Setelah menuang air bloom, tunggu penuh 25–35 detik sebelum main pour.`:`△ <span class="note-key">BLOOM [6/10]</span> — Flow bloom ${bloomAvg.toFixed(1)} g/s, yield ${bloomYield.toFixed(0)}g. Bloom detected but rest pause was not found. After pouring bloom water, wait a full 25–35 seconds before the main pour.`;
+    } else if(bloomFlowOk||bloomRatioOk){
+      bloomScore=5; bloomFlag='warn';
+      const issue=currentLang==='id'?
+        yieldLow?`Air bloom ${bloomYield.toFixed(0)}g kurang dari target ~${expBloom.toFixed(0)}g — sebagian bed kering, CO₂ tidak terlepas sempurna.`:
+        yieldHigh?`Air bloom ${bloomYield.toFixed(0)}g terlalu banyak (target ~${expBloom.toFixed(0)}g) — bed terlalu jenuh sebelum main pour.`:
+        `Aliran bloom ${bloomAvg.toFixed(1)} g/s terlalu ${bloomAvg>4.5?'cepat — bed disruption':'lambat'}.`
+      :
+        yieldLow?`Bloom water ${bloomYield.toFixed(0)}g below target ~${expBloom.toFixed(0)}g — part of the bed is dry, CO₂ not fully released.`:
+        yieldHigh?`Bloom water ${bloomYield.toFixed(0)}g too much (target ~${expBloom.toFixed(0)}g) — bed over-saturated before main pour.`:
+        `Bloom flow ${bloomAvg.toFixed(1)} g/s too ${bloomAvg>4.5?'fast — bed disruption':'slow'}.`;
+      bloomNote=currentLang==='id'?`△ <span class="note-key">BLOOM [5/10]</span> — ${issue} Ideal: 2–3× dosis (${(s.dose*2).toFixed(0)}–${(s.dose*3).toFixed(0)}g) dalam 8–12 detik, lalu istirahat 25–35 detik.`:`△ <span class="note-key">BLOOM [5/10]</span> — ${issue} Ideal: 2–3× dose (${(s.dose*2).toFixed(0)}–${(s.dose*3).toFixed(0)}g) in 8–12 sec, then rest 25–35 seconds.`;
+    } else {
+      bloomScore=2; bloomFlag='fail';
+      bloomNote=currentLang==='id'?`✕ <span class="note-key">BLOOM [2/10]</span> — Bloom ${bloomAvg.toFixed(1)} g/s, yield ${bloomYield.toFixed(0)}g. Fase bloom tidak terkontrol. CO₂ tidak sempat keluar → gas barrier → under-extraction struktural di seluruh seduhan. Tuang pelan dan merata, lalu diam penuh 30 detik.`:`✕ <span class="note-key">BLOOM [2/10]</span> — Bloom ${bloomAvg.toFixed(1)} g/s, yield ${bloomYield.toFixed(0)}g. Bloom phase uncontrolled. CO₂ could not escape → gas barrier → structural under-extraction throughout the brew. Pour slowly and evenly, then rest a full 30 seconds.`;
+    }
+  }
+
+  // ══ TOTAL & GRADE ════════════════════════════
+  const total=ratioScore+timeScore+consistScore+flowScore+peakScore+bloomScore;
+  let grade,verdict,gradeColor;
+  if(total>=90){grade=t('grade90');verdict=t('verdict90');gradeColor='var(--accent)';}
+  else if(total>=80){grade=t('grade80');verdict=t('verdict80');gradeColor='var(--green)';}
+  else if(total>=70){grade=t('grade70');verdict=t('verdict70');gradeColor='var(--blue)';}
+  else if(total>=60){grade=t('grade60');verdict=t('verdict60');gradeColor='var(--text-dim)';}
+  else if(total>=45){grade=t('grade45');verdict=t('verdict45');gradeColor='var(--orange)';}
+  else{grade=t('grade0');verdict=t('verdict0');gradeColor='var(--red)';}
+
+  const breakdown={
+    ratio:{score:ratioScore,max:25,flag:ratioFlag},
+    time:{score:timeScore,max:20,flag:timeFlag},
+    consist:{score:consistScore,max:20,flag:consistFlag},
+    flow:{score:flowScore,max:15,flag:flowFlag},
+    peak:{score:peakScore,max:10,flag:peakFlag},
+    bloom:{score:bloomScore,max:10,flag:bloomFlag}
+  };
+  const noteObjs=[
+    {text:ratioNote,flag:ratioFlag},{text:timeNote,flag:timeFlag},
+    {text:consistNote,flag:consistFlag},{text:flowNote,flag:flowFlag},
+    {text:peakNote,flag:peakFlag},{text:bloomNote,flag:bloomFlag}
+  ];
+  return {score:total,verdict,grade,gradeColor,breakdown,noteObjs,
+    notes:noteObjs.map(n=>n.text)};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// POUR OVER GUIDE
+// ═══════════════════════════════════════════════════════════════
+function toggleGuide(){
+  guideOpen=!guideOpen;
+  document.getElementById('guideBody').classList.toggle('open', guideOpen);
+  document.querySelector('.guide-toggle').textContent=guideOpen?t('guide_close'):t('guide_open');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CUSTOM RECIPE SLOTS (multi-slot, max 4)
+// ═══════════════════════════════════════════════════════════════
+const CUSTOM_SLOTS_KEY = 'eugenix_custom_slots';
+const MAX_CUSTOM_SLOTS = 4;
+const DEFAULT_FLOW_MIN = 3.0;
+const DEFAULT_FLOW_MAX = 7.0;
+
+let customSlots = [
+  {
+    id: 'custom_0',
+    recipeName: 'MY RECIPE',
+    dose: 15, ratio: 15, temp: 93,
+    flowMin: DEFAULT_FLOW_MIN, flowMax: DEFAULT_FLOW_MAX,
+    targetWeightOverride: null,  // null = auto (dose × ratio)
+    steps: [
+      { name:'BLOOM',   water:45,  time:'0:00', flow:'3–6', note:'Pre-infusion, wait 30s' },
+      { name:'POUR 1',  water:120, time:'0:30', flow:'4–6', note:'Main pour, circular' },
+      { name:'FINISH',  water:60,  time:'1:30', flow:'3–5', note:'Fill to target' },
+    ]
+  }
+];
+let activeSlotId = 'custom_0';
+
+function getActiveSlot(){
+  return customSlots.find(s=>s.id===activeSlotId) || customSlots[0];
+}
+
+function loadCustomSlots(){
+  try {
+    // Migrate old single-slot data
+    const oldKey = localStorage.getItem('eugenix_custom_recipe');
+    if(oldKey){
+      const old = JSON.parse(oldKey);
+      customSlots[0] = {
+        id:'custom_0',
+        recipeName: old.recipeName||'MY RECIPE',
+        dose: old.dose||15, ratio: old.ratio||15, temp: old.temp||93,
+        flowMin: old.flowMin||DEFAULT_FLOW_MIN, flowMax: old.flowMax||DEFAULT_FLOW_MAX,
+        targetWeightOverride: null,
+        steps: old.steps||customSlots[0].steps
+      };
+      localStorage.removeItem('eugenix_custom_recipe');
+    }
+    const saved = localStorage.getItem(CUSTOM_SLOTS_KEY);
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(Array.isArray(parsed)&&parsed.length>0) customSlots = parsed;
+    }
+  } catch(e){}
+  // Ensure all slots have required fields
+  customSlots.forEach((s,i)=>{
+    if(!s.id) s.id='custom_'+i;
+    if(!s.recipeName) s.recipeName='MY RECIPE';
+    if(!s.flowMin) s.flowMin=DEFAULT_FLOW_MIN;
+    if(!s.flowMax) s.flowMax=DEFAULT_FLOW_MAX;
+    if(s.targetWeightOverride===undefined) s.targetWeightOverride=null;
+  });
+  syncCustomToRecipes();
+}
+
+function saveCustomSlots(){
+  try { localStorage.setItem(CUSTOM_SLOTS_KEY, JSON.stringify(customSlots)); } catch(e){}
+}
+
+function syncCustomToRecipes(){
+  // Remove existing custom slot entries
+  const fixed = RECIPES.filter(r=>!r.id.startsWith('custom_'));
+  RECIPES.length = 0;
+  fixed.forEach(r=>RECIPES.push(r));
+  // Add current slots
+  customSlots.forEach(slot=>{
+    const targetW = slot.targetWeightOverride !== null
+      ? slot.targetWeightOverride
+      : slot.dose * slot.ratio;
+    RECIPES.push({
+      id: slot.id,
+      name: slot.recipeName||'CUSTOM',
+      desc: 'Custom recipe · '+targetW.toFixed(0)+'g target',
+      dose: slot.dose, ratio: slot.ratio, temp: slot.temp,
+      flowMin: slot.flowMin, flowMax: slot.flowMax,
+      steps: slot.steps.map(s=>({...s}))
+    });
+  });
+}
+
+function addCustomSlot(){
+  if(timerRunning) return;
+  if(customSlots.length >= MAX_CUSTOM_SLOTS) return;
+  const newId = 'custom_'+Date.now();
+  const newSlot = {
+    id: newId,
+    recipeName: 'RECIPE '+(customSlots.length+1),
+    dose:15, ratio:15, temp:93,
+    flowMin:DEFAULT_FLOW_MIN, flowMax:DEFAULT_FLOW_MAX,
+    targetWeightOverride:null,
+    steps:[
+      {name:'BLOOM',  water:45,  time:'0:00',flow:'3–6',note:'Pre-infusion'},
+      {name:'POUR 1', water:120, time:'0:30',flow:'4–6',note:'Main pour'},
+      {name:'FINISH', water:60,  time:'1:30',flow:'3–5',note:'Fill to target'},
+    ]
+  };
+  customSlots.push(newSlot);
+  activeSlotId = newId;
+  saveCustomSlots();
+  syncCustomToRecipes();
+  buildRecipeChips();
+  const recipe = RECIPES.find(r=>r.id===newId);
+  if(recipe) selectRecipe(recipe);
+}
+
+function deleteCurrentSlot(){
+  if(customSlots.length <= 1) return;
+  const idx = customSlots.findIndex(s=>s.id===activeSlotId);
+  if(idx<0) return;
+  if(!confirm('Delete "'+customSlots[idx].recipeName+'"?')) return;
+  customSlots.splice(idx,1);
+  activeSlotId = customSlots[Math.max(0,idx-1)].id;
+  saveCustomSlots();
+  syncCustomToRecipes();
+  buildRecipeChips();
+  const recipe = RECIPES.find(r=>r.id===activeSlotId);
+  if(recipe) selectRecipe(recipe);
+}
+
+function getSlotTargetWeight(slot){
+  if(slot.targetWeightOverride !== null) return slot.targetWeightOverride;
+  return +(slot.dose * slot.ratio).toFixed(1);
+}
+
+function nudgeSlotTargetWeight(delta){
+  const slot=getActiveSlot();
+  if(!slot) return;
+  slot.targetWeightOverride=Math.max(50,Math.min(1000,+(getSlotTargetWeight(slot)+delta).toFixed(0)));
+  renderCustomEditor();
+  if(activeRecipe&&activeRecipe.id===slot.id) renderStepList();
+}
+
+function resetSlotTargetWeight(){
+  const slot=getActiveSlot();
+  if(!slot) return;
+  slot.targetWeightOverride=null;
+  renderCustomEditor();
+  if(activeRecipe&&activeRecipe.id===slot.id) renderStepList();
+}
+
+function addCustomStep(){
+  const slot = getActiveSlot();
+  if(!slot) return;
+  const last = slot.steps[slot.steps.length-1];
+  const lastTime = last ? last.time : '0:00';
+  const [mm,ss] = lastTime.split(':').map(Number);
+  const nextSec = mm*60+ss+30;
+  const nm=Math.floor(nextSec/60), ns=nextSec%60;
+  slot.steps.push({
+    name:'STEP '+(slot.steps.length+1),
+    water:60, time:`${nm}:${String(ns).padStart(2,'0')}`,
+    flow:'3–6', note:''
+  });
+  renderCustomEditor();
+}
+
+function removeCustomStep(i){
+  const slot = getActiveSlot();
+  if(!slot||slot.steps.length<=1) return;
+  slot.steps.splice(i,1);
+  renderCustomEditor();
+}
+
+function saveCustomRecipe(){
+  const slot = getActiveSlot();
+  if(!slot) return;
+  const nameIn = document.getElementById('customRecipeName');
+  if(nameIn) slot.recipeName = nameIn.value.toUpperCase()||'MY RECIPE';
+  saveCustomSlots();
+  syncCustomToRecipes();
+  buildRecipeChips();
+  // Re-apply active recipe
+  const r = RECIPES.find(x=>x.id===slot.id);
+  if(r){ activeRecipe=r; updateFlowGuideRange(r.flowMin,r.flowMax); renderStepList(); }
+  // Collapse editor
+  const body=document.getElementById('customEditorBody');
+  const btn=document.getElementById('customEditorToggle');
+  if(body) body.style.display='none';
+  if(btn){ btn.textContent='✓ SAVED'; btn.style.color='var(--green)';
+    setTimeout(()=>{ btn.textContent='EDIT ▼'; btn.style.color=''; },1200); }
+}
+
+function syncChipName(){
+  const slot = getActiveSlot();
+  if(!slot) return;
+  const chip = document.getElementById('chip-'+slot.id);
+  if(chip) chip.textContent = (slot.recipeName||'CUSTOM')+' ✎';
+}
+
+function toggleCustomEditorBody(){
+  const body=document.getElementById('customEditorBody');
+  const btn=document.getElementById('customEditorToggle');
+  if(!body||!btn) return;
+  const hidden=body.style.display==='none';
+  body.style.display=hidden?'block':'none';
+  btn.textContent=hidden?'HIDE ▲':'EDIT ▼';
+}
+
+function showCustomEditor(show){
+  const ed=document.getElementById('customEditor');
+  if(!ed) return;
+  ed.style.display=show?'block':'none';
+  if(show){
+    const slot=getActiveSlot();
+    const nameIn=document.getElementById('customRecipeName');
+    if(nameIn&&slot) nameIn.value=slot.recipeName||'MY RECIPE';
+    const body=document.getElementById('customEditorBody');
+    const btn=document.getElementById('customEditorToggle');
+    if(body) body.style.display='block';
+    if(btn) btn.textContent='HIDE ▲';
+    renderCustomEditor();
+  }
+}
+
+function nudgeCustomParam(key, delta, min, max, dec, unit){
+  const slot = getActiveSlot();
+  if(!slot) return;
+  slot[key] = Math.min(max, Math.max(min, +(slot[key]+delta).toFixed(dec)));
+  const el = document.getElementById('cpv_'+key);
+  if(el) el.textContent = slot[key].toFixed(dec)+unit;
+  // Sync dose/ratio to brew params if this is the active recipe
+  if(activeRecipe&&activeRecipe.id===slot.id){
+    if(key==='dose'){ brewDose=slot.dose; refreshParamDisplays(); }
+    if(key==='ratio'){ brewTargetRatio=slot.ratio; refreshParamDisplays(); }
+    if(key==='temp'){ brewTemp=slot.temp; refreshParamDisplays(); }
+    // Re-render step list so target weights update live
+    renderStepList();
+  }
+  // Update target weight display
+  const tw=document.getElementById('cpv_targetWeight');
+  if(tw){
+    const auto=slot.targetWeightOverride===null;
+    const val=getSlotTargetWeight(slot);
+    tw.textContent=val.toFixed(0)+'g'+(auto?' (auto)':'');
+  }
+}
+
+function renderCustomEditor(){
+  const slot = getActiveSlot();
+  if(!slot) return;
+  const paramsRow=document.getElementById('customParamsRow');
+  if(!paramsRow) return;
+
+  // ── Params (no F.MIN/F.MAX — replaced by TARGET WEIGHT) ─────
+  const params=[
+    {key:'dose',  label:'DOSE',  unit:'g',  step:0.1, min:1,   max:50,  dec:1},
+    {key:'ratio', label:'RATIO', unit:'',   step:0.1, min:1,   max:25,  dec:1},
+    {key:'temp',  label:'TEMP',  unit:'°C', step:1,   min:50,  max:100, dec:0},
+  ];
+  paramsRow.style.gridTemplateColumns='repeat(3,1fr)';
+  paramsRow.innerHTML='';
+  params.forEach(p=>{
+    const cell=document.createElement('div'); cell.className='custom-param-cell';
+    const lbl=document.createElement('div'); lbl.className='custom-param-lbl'; lbl.textContent=p.label;
+    const val=document.createElement('div'); val.className='custom-param-val'; val.id='cpv_'+p.key;
+    val.textContent=slot[p.key].toFixed(p.dec)+p.unit;
+    const nudge=document.createElement('div'); nudge.className='custom-param-nudge';
+    const bm=document.createElement('button'); bm.textContent='−';
+    bm.onclick=()=>nudgeCustomParam(p.key,-p.step,p.min,p.max,p.dec,p.unit);
+    const bp=document.createElement('button'); bp.textContent='+';
+    bp.onclick=()=>nudgeCustomParam(p.key,p.step,p.min,p.max,p.dec,p.unit);
+    nudge.appendChild(bm); nudge.appendChild(bp);
+    cell.appendChild(lbl); cell.appendChild(val); cell.appendChild(nudge);
+    paramsRow.appendChild(cell);
+  });
+
+  // Target weight cell
+  const twCell=document.createElement('div'); twCell.className='custom-param-cell';
+  const twLbl=document.createElement('div'); twLbl.className='custom-param-lbl'; twLbl.textContent='TARGET';
+  const twVal=document.createElement('div'); twVal.className='custom-param-val'; twVal.id='cpv_targetWeight';
+  const auto=slot.targetWeightOverride===null;
+  twVal.textContent=getSlotTargetWeight(slot).toFixed(0)+'g'+(auto?' (auto)':'');
+  twVal.style.fontSize='10px';
+  const twNudge=document.createElement('div'); twNudge.className='custom-param-nudge';
+  const twm=document.createElement('button'); twm.textContent='−'; twm.onclick=()=>nudgeSlotTargetWeight(-5);
+  const twp=document.createElement('button'); twp.textContent='+'; twp.onclick=()=>nudgeSlotTargetWeight(5);
+  const twr=document.createElement('button');
+  twr.textContent='↺'; twr.title='Reset to auto';
+  twr.style.cssText='width:18px;height:18px;border-radius:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+  twr.onclick=()=>resetSlotTargetWeight();
+  twNudge.appendChild(twm); twNudge.appendChild(twp); twNudge.appendChild(twr);
+  twCell.appendChild(twLbl); twCell.appendChild(twVal); twCell.appendChild(twNudge);
+  paramsRow.appendChild(twCell);
+  // Make grid 4 cols
+  paramsRow.style.gridTemplateColumns='repeat(4,1fr)';
+
+  // ── Steps ────────────────────────────────────────────────────
+  const stepEd=document.getElementById('customStepEditor');
+  if(!stepEd) return;
+  stepEd.innerHTML='';
+  slot.steps.forEach((s,i)=>{
+    const card=document.createElement('div'); card.className='custom-step-card';
+    const row1=document.createElement('div'); row1.className='custom-step-row1';
+    const nameIn=document.createElement('input'); nameIn.className='custom-step-name';
+    nameIn.value=s.name; nameIn.placeholder='STEP NAME';
+    nameIn.oninput=function(){ slot.steps[i].name=this.value.toUpperCase(); this.value=this.value.toUpperCase(); };
+    const waterWrap=document.createElement('div');
+    waterWrap.style.cssText='display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;color:var(--text-muted);';
+    const arrow=document.createElement('span'); arrow.textContent='→';
+    const waterIn=document.createElement('input'); waterIn.type='number';
+    waterIn.min=0; waterIn.max=500; waterIn.value=s.water; waterIn.placeholder='g';
+    waterIn.style.cssText='width:44px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;font-family:var(--mono);font-size:10px;color:var(--accent);padding:3px 5px;outline:none;text-align:center;';
+    waterIn.oninput=function(){ slot.steps[i].water=+this.value; };
+    const gUnit=document.createElement('span'); gUnit.textContent='g'; gUnit.style.fontSize='7px';
+    waterWrap.appendChild(arrow); waterWrap.appendChild(waterIn); waterWrap.appendChild(gUnit);
+    row1.appendChild(nameIn); row1.appendChild(waterWrap);
+    if(slot.steps.length>1){
+      const delBtn=document.createElement('button'); delBtn.className='custom-step-del';
+      delBtn.textContent='×'; delBtn.onclick=()=>removeCustomStep(i);
+      row1.appendChild(delBtn);
+    }
+    const row2=document.createElement('div'); row2.className='custom-step-row2';
+    [{label:'START TIME',val:s.time,ph:'0:00',key:'time'},
+     {label:'FLOW g/s',val:s.flow,ph:'3–6',key:'flow'},
+     {label:'NOTE',val:s.note,ph:'tip...',key:'note'}].forEach(f=>{
+      const wrap=document.createElement('div'); wrap.className='custom-field';
+      const lbl=document.createElement('div'); lbl.className='custom-field-lbl'; lbl.textContent=f.label;
+      const inp=document.createElement('input'); inp.value=f.val; inp.placeholder=f.ph;
+      if(f.key==='time') inp.maxLength=5;
+      inp.oninput=(function(key){return function(){ slot.steps[i][key]=this.value; };})(f.key);
+      wrap.appendChild(lbl); wrap.appendChild(inp); row2.appendChild(wrap);
+    });
+    card.appendChild(row1); card.appendChild(row2); stepEd.appendChild(card);
+  });
+
+  // Delete slot button — always shown for custom slots
+  // (fixed recipes 4:6/Hoffmann/3 Pour are locked and cannot be deleted)
+  const existingDel=document.getElementById('deleteSlotBtn');
+  if(existingDel) existingDel.remove();
+  const delSlotBtn=document.createElement('button');
+  delSlotBtn.id='deleteSlotBtn';
+  delSlotBtn.style.cssText='width:100%;margin-top:6px;padding:6px;background:rgba(224,112,112,0.07);border:1px solid rgba(224,112,112,0.2);border-radius:8px;font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--red);cursor:pointer;opacity:'+( customSlots.length>1?'1':'0.3')+';';
+  delSlotBtn.textContent='× DELETE THIS RECIPE';
+  delSlotBtn.disabled=customSlots.length<=1;
+  delSlotBtn.title=customSlots.length<=1?'Cannot delete — must have at least 1 custom recipe':'Delete this custom recipe';
+  delSlotBtn.onclick=deleteCurrentSlot;
+  const actionsDiv=document.querySelector('#customEditor .custom-actions-row');
+  if(actionsDiv) actionsDiv.after(delSlotBtn);
+  else stepEd.after(delSlotBtn);
+}
+
+function buildRecipeChips(){
+  const row=document.getElementById('recipeRow');
+  row.innerHTML='';
+  // Fixed recipes — reference methods, locked (cannot be deleted)
+  RECIPES.filter(r=>!r.id.startsWith('custom_')).forEach(r=>{
+    const chip=document.createElement('button');
+    chip.className='recipe-chip';
+    chip.textContent=r.name;
+    chip.title=(r.desc||r.name)+' · Reference method (locked)';
+    chip.onclick=()=>selectRecipe(RECIPES.find(x=>x.id===r.id)||r);
+    chip.id='chip-'+r.id;
+    row.appendChild(chip);
+  });
+  // Custom slot chips — editable & deletable
+  customSlots.forEach(slot=>{
+    const chip=document.createElement('button');
+    chip.className='recipe-chip custom-slot';
+    chip.textContent=(slot.recipeName||'CUSTOM')+' ✎';
+    chip.title='Custom recipe · tap to edit';
+    chip.onclick=()=>{
+      activeSlotId=slot.id;
+      const r=RECIPES.find(x=>x.id===slot.id);
+      if(r) selectRecipe(r);
+    };
+    chip.id='chip-'+slot.id;
+    row.appendChild(chip);
+  });
+  // "+" add slot button (hidden when max reached)
+  if(customSlots.length < MAX_CUSTOM_SLOTS){
+    const addBtn=document.createElement('button');
+    addBtn.className='chip-add-btn';
+    addBtn.id='chipAddBtn';
+    addBtn.textContent='+';
+    addBtn.title='Add new custom recipe';
+    addBtn.onclick=addCustomSlot;
+    row.appendChild(addBtn);
+  }
+}
+
+function selectRecipe(recipe){
+  if(timerRunning) return;
+  activeRecipe=recipe;
+  document.querySelectorAll('.recipe-chip').forEach(c=>c.classList.remove('active'));
+  const chip=document.getElementById('chip-'+recipe.id);
+  if(chip) chip.classList.add('active');
+  if(recipe.id.startsWith('custom_')){
+    activeSlotId=recipe.id;
+    const slot=getActiveSlot();
+    if(slot){ brewDose=slot.dose; brewTargetRatio=slot.ratio; brewTemp=slot.temp;
+      refreshParamDisplays(); saveParams(); }
+    showCustomEditor(true);
+  } else {
+    brewDose=recipe.dose; brewTargetRatio=recipe.ratio; brewTemp=recipe.temp;
+    refreshParamDisplays(); saveParams();
+    showCustomEditor(false);
+  }
+  updateFlowGuideRange(recipe.flowMin, recipe.flowMax);
+  currentStep=0;
+  renderStepList();
+}
+
+function updateFlowGuideRange(flowMin, flowMax){
+  const maxFlow=10;
+  const zoneEl=document.getElementById('flowGuideZone');
+  const floorEl=document.getElementById('flowFloor');
+  const ceilEl=document.getElementById('flowCeil');
+  const labelEl=document.getElementById('flowGuideLabel');
+  if(zoneEl){
+    zoneEl.style.left=(flowMin/maxFlow*100)+'%';
+    zoneEl.style.right=((maxFlow-flowMax)/maxFlow*100)+'%';
+  }
+  if(floorEl) floorEl.textContent=flowMin.toFixed(1);
+  if(ceilEl) ceilEl.textContent=flowMax.toFixed(1);
+  if(labelEl) labelEl.textContent=flowMin+'–'+flowMax+' g/s';
+}
+
+function updateFlowGuide(){
+  if(!activeRecipe||!timerRunning) return;
+  const flowEl=document.getElementById('flowVal');
+  const curFlow=flowEl&&flowEl.textContent!=='--'?parseFloat(flowEl.textContent)||0:0;
+  const maxFlow=10;
+  const cursor=document.getElementById('flowCursor');
+  const cursorVal=document.getElementById('flowCursorVal');
+  if(cursor){
+    const pct=Math.min(100, (curFlow/maxFlow)*100);
+    cursor.style.left=pct+'%';
+  }
+  if(cursorVal) cursorVal.textContent=curFlow.toFixed(1)+' g/s';
+
+  // Color cursor based on zone
+  const inZone=curFlow>=activeRecipe.flowMin&&curFlow<=activeRecipe.flowMax;
+  if(cursor) cursor.style.background=inZone?'var(--green)':curFlow<activeRecipe.flowMin?'var(--blue)':'var(--red)';
+}
+
+function renderStepList(){
+  if(!activeRecipe) return;
+  const list=document.getElementById('stepsList');
+  if(!list) return;
+  list.innerHTML='';
+
+  // Effective target: use slot's targetWeightOverride if custom, else dose × ratio
+  let effectiveTarget = 0;
+  if(activeRecipe.id.startsWith('custom_')){
+    const slot=customSlots.find(s=>s.id===activeRecipe.id);
+    if(slot) effectiveTarget=getSlotTargetWeight(slot);
+  } else {
+    effectiveTarget=brewDose&&brewTargetRatio?brewDose*brewTargetRatio:0;
+  }
+
+  let cumWater=0;
+  const totalSteps=activeRecipe.steps.length;
+  activeRecipe.steps.forEach((step,i)=>{
+    cumWater+=step.water;
+    const item=document.createElement('div');
+    item.className='step-item'+(i<currentStep?' done':i===currentStep?' current':'');
+    // Last step → show effectiveTarget; intermediate → show cumulative (uncapped)
+    const targetW = effectiveTarget>0
+      ? (i===totalSteps-1 ? effectiveTarget : Math.min(cumWater, effectiveTarget))
+      : cumWater;
+    item.innerHTML=`
+      <div class="step-num">${i+1}</div>
+      <div class="step-info">
+        <div class="step-name">${step.name}</div>
+        <div class="step-detail">${step.time} · flow ${step.flow} · ${step.note}</div>
+      </div>
+      ${step.water>0?`<div class="step-target-w">→ ${targetW.toFixed(0)}g</div>`:''}
+    `;
+    if(i===currentStep&&i<activeRecipe.steps.length-1){
+      item.style.cursor='pointer';
+      item.onclick=()=>{ currentStep++; renderStepList(); };
+      item.title='Tap to mark as done';
+    }
+    list.appendChild(item);
+  });
+}
+
+function updateStepProgress(){
+  if(!activeRecipe||!timerRunning) return;
+  const yield_=rawWeight-tareOffset;
+  let cumWater=0;
+  for(let i=0;i<=currentStep&&i<activeRecipe.steps.length;i++){
+    cumWater+=activeRecipe.steps[i].water;
+  }
+  // Use slot's target weight for custom recipes
+  let effectiveTarget=0;
+  if(activeRecipe.id.startsWith('custom_')){
+    const slot=customSlots.find(s=>s.id===activeRecipe.id);
+    if(slot) effectiveTarget=getSlotTargetWeight(slot);
+  } else {
+    effectiveTarget=brewDose&&brewTargetRatio?brewDose*brewTargetRatio:0;
+  }
+  const targetW=effectiveTarget>0?Math.min(cumWater,effectiveTarget):cumWater;
+  if(yield_>=targetW*0.98&&currentStep<activeRecipe.steps.length-1){
+    currentStep++;
+    renderStepList();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHART ENGINE
+// ═══════════════════════════════════════════════════════════════
+function clearChart(){
+  chartData=[]; chartDirty=true;
+  renderChart();
+}
+
+function recordChartPoint(){
+  if(!timerRunning) return;
+  const now=Date.now();
+  if(now-chartLastRecord<CHART_INTERVAL) return;
+  chartLastRecord=now;
+  const t=timerMs/1000;
+  const w=Math.max(0, rawWeight-tareOffset);
+  const flowEl=document.getElementById('flowVal');
+  const f=(flowEl&&flowEl.textContent!=='--')?parseFloat(flowEl.textContent)||0:0;
+  chartData.push({t,w,f});
+  chartDirty=true;
+  if(!chartRAF) chartRAF=requestAnimationFrame(renderChart);
+}
+
+function renderChart(){
+  chartRAF=null;
+  if(!chartDirty) return;
+  chartDirty=false;
+
+  const canvas=document.getElementById('shotCanvas');
+  if(!canvas) return;
+  const dpr=window.devicePixelRatio||1;
+  const cssW=canvas.parentElement.clientWidth||360;
+  const cssH=Math.max(200, window.innerHeight*0.35);
+  canvas.width=cssW*dpr; canvas.height=cssH*dpr;
+  canvas.style.width=cssW+'px'; canvas.style.height=cssH+'px';
+
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const W=cssW, H=cssH;
+  ctx.fillStyle='#0a0a0a';
+  ctx.fillRect(0,0,W,H);
+
+  if(chartData.length<2){
+    ctx.fillStyle='rgba(255,255,255,0.1)';
+    ctx.font=`11px 'DM Mono',monospace`;
+    ctx.textAlign='center';
+    ctx.fillText('Start the timer to record the chart', W/2, H/2);
+    return;
+  }
+
+  const ml=38, mr=38, mt=14, mb=22;
+  const pw=W-ml-mr, ph=H-mt-mb;
+  const tLast=chartData[chartData.length-1].t;
+  const tMax=Math.max(60, Math.ceil((tLast+5)/15)*15);
+  const wMax=Math.ceil(Math.max(10,...chartData.map(d=>Math.max(0,d.w)))/10)*10*1.15;
+  const fMax=Math.ceil(Math.max(2,...chartData.map(d=>d.f))/2)*2*1.2;
+  const xPx=t=>ml+(t/tMax)*pw;
+  const wPx=w=>mt+ph-(w/wMax)*ph;
+  const fPx=f=>mt+ph-(f/fMax)*ph;
+
+  // Flow guide zones on chart
+  if(activeRecipe){
+    const fMinPx=fPx(activeRecipe.flowMin), fMaxPx=fPx(activeRecipe.flowMax);
+    ctx.fillStyle='rgba(94,203,138,0.05)';
+    ctx.fillRect(ml, fMaxPx, pw, fMinPx-fMaxPx);
+    ctx.strokeStyle='rgba(94,203,138,0.15)';
+    ctx.lineWidth=1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(ml,fMinPx); ctx.lineTo(ml+pw,fMinPx); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ml,fMaxPx); ctx.lineTo(ml+pw,fMaxPx); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Grid
+  ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=mt+(ph/5)*i;
+    ctx.strokeStyle='rgba(255,255,255,0.05)';
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(ml,y); ctx.lineTo(ml+pw,y); ctx.stroke();
+  }
+  const xStep=tMax<=60?15:tMax<=120?30:60;
+  ctx.font=`8px 'DM Mono',monospace`;
+  for(let t=0;t<=tMax;t+=xStep){
+    const x=xPx(t);
+    ctx.strokeStyle='rgba(255,255,255,0.05)';
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x,mt); ctx.lineTo(x,mt+ph); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.textAlign='center';
+    ctx.fillText(t<60?t+'s':`${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`, x, mt+ph+13);
+  }
+  ctx.textAlign='right';
+  for(let i=0;i<=5;i++){
+    const w=wMax*(1-i/5);
+    ctx.fillStyle='rgba(232,201,122,0.4)'; ctx.fillText(Math.round(w), ml-5, mt+(ph/5)*i+3);
+  }
+  ctx.textAlign='left';
+  for(let i=0;i<=5;i++){
+    const f=fMax*(1-i/5);
+    ctx.fillStyle='rgba(126,200,232,0.4)'; ctx.fillText(f.toFixed(1), ml+pw+5, mt+(ph/5)*i+3);
+  }
+
+  // Area fills
+  ctx.beginPath();
+  ctx.moveTo(xPx(chartData[0].t), wPx(Math.max(0,chartData[0].w)));
+  chartData.forEach(d=>ctx.lineTo(xPx(d.t), wPx(Math.max(0,d.w))));
+  ctx.lineTo(xPx(chartData[chartData.length-1].t), mt+ph);
+  ctx.lineTo(xPx(chartData[0].t), mt+ph);
+  ctx.closePath();
+  const wGrad=ctx.createLinearGradient(0,mt,0,mt+ph);
+  wGrad.addColorStop(0,'rgba(232,201,122,0.12)'); wGrad.addColorStop(1,'rgba(232,201,122,0.01)');
+  ctx.fillStyle=wGrad; ctx.setLineDash([]); ctx.fill();
+
+  // ── Smooth flow values (Gaussian kernel, radius=3) for visual only
+  function gaussSmooth(data, key, radius){
+    const kernel=[0.0625,0.25,0.375,0.25,0.0625]; // σ≈1 Gaussian (r=2)
+    const r=Math.floor(kernel.length/2);
+    return data.map((_,i)=>{
+      let sum=0,w=0;
+      for(let k=-r;k<=r;k++){
+        const j=i+k; if(j<0||j>=data.length) continue;
+        const kw=kernel[k+r]; sum+=data[j][key]*kw; w+=kw;
+      }
+      return w>0?sum/w:data[i][key];
+    });
+  }
+  const smoothF = gaussSmooth(chartData,'f',2);
+
+  // Flow area fill (smoothed)
+  ctx.beginPath();
+  ctx.moveTo(xPx(chartData[0].t), fPx(smoothF[0]));
+  chartData.forEach((d,i)=>ctx.lineTo(xPx(d.t), fPx(smoothF[i])));
+  ctx.lineTo(xPx(chartData[chartData.length-1].t), mt+ph);
+  ctx.lineTo(xPx(chartData[0].t), mt+ph);
+  ctx.closePath();
+  const fGrad=ctx.createLinearGradient(0,mt,0,mt+ph);
+  fGrad.addColorStop(0,'rgba(126,200,232,0.10)'); fGrad.addColorStop(1,'rgba(126,200,232,0.01)');
+  ctx.fillStyle=fGrad; ctx.fill();
+
+  // Flow line — smoothed with bezier curve for extra softness
+  ctx.setLineDash([]);
+  ctx.strokeStyle='#7ec8e8'; ctx.lineWidth=2.0;
+  ctx.shadowColor='rgba(126,200,232,0.45)'; ctx.shadowBlur=5;
+  ctx.beginPath();
+  ctx.moveTo(xPx(chartData[0].t), fPx(smoothF[0]));
+  for(let i=1;i<chartData.length;i++){
+    const x0=xPx(chartData[i-1].t), y0=fPx(smoothF[i-1]);
+    const x1=xPx(chartData[i].t),   y1=fPx(smoothF[i]);
+    const cpx=(x0+x1)/2;
+    ctx.bezierCurveTo(cpx,y0,cpx,y1,x1,y1);
+  }
+  ctx.stroke();
+  // Flow end dot + label
+  const lastFlow=chartData[chartData.length-1];
+  const lastSF=smoothF[smoothF.length-1];
+  ctx.fillStyle='#7ec8e8'; ctx.shadowColor='rgba(126,200,232,0.6)'; ctx.shadowBlur=6;
+  ctx.beginPath(); ctx.arc(xPx(lastFlow.t),fPx(lastSF),3.5,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(126,200,232,0.85)'; ctx.font=`bold 8px 'DM Mono',monospace`; ctx.textAlign='right';
+  ctx.fillText(lastSF.toFixed(1)+'g/s', xPx(lastFlow.t)-6, fPx(lastSF)-5);
+
+  // Running average flow — like yield graph (area + line + dot + label)
+  {
+    let rSum=0, rCount=0;
+    const runAvg=chartData.map(d=>{ if(d.f>0){rSum+=d.f;rCount++;} return rCount>0?rSum/rCount:0; });
+    const finalAvg=runAvg[runAvg.length-1];
+    if(rCount>0){
+      // Area fill
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(xPx(chartData[0].t), fPx(runAvg[0]));
+      chartData.forEach((d,i)=>ctx.lineTo(xPx(d.t), fPx(runAvg[i])));
+      ctx.lineTo(xPx(chartData[chartData.length-1].t), mt+ph);
+      ctx.lineTo(xPx(chartData[0].t), mt+ph);
+      ctx.closePath();
+      const rGrad=ctx.createLinearGradient(0,mt,0,mt+ph);
+      rGrad.addColorStop(0,'rgba(179,157,219,0.13)'); rGrad.addColorStop(1,'rgba(179,157,219,0.01)');
+      ctx.fillStyle=rGrad; ctx.fill();
+      // Line
+      ctx.strokeStyle='#b39ddb'; ctx.lineWidth=1.6;
+      ctx.shadowColor='rgba(179,157,219,0.4)'; ctx.shadowBlur=4;
+      ctx.beginPath();
+      chartData.forEach((d,i)=>{ i===0?ctx.moveTo(xPx(d.t),fPx(runAvg[i])):ctx.lineTo(xPx(d.t),fPx(runAvg[i])); });
+      ctx.stroke(); ctx.shadowBlur=0;
+      // End dot
+      const lastT=chartData[chartData.length-1].t;
+      ctx.fillStyle='#b39ddb'; ctx.shadowColor='rgba(179,157,219,0.6)'; ctx.shadowBlur=5;
+      ctx.beginPath(); ctx.arc(xPx(lastT),fPx(finalAvg),3.5,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+      // Label at end
+      ctx.fillStyle='rgba(179,157,219,0.85)'; ctx.font=`bold 8px 'DM Mono',monospace`; ctx.textAlign='right';
+      ctx.fillText('avg '+finalAvg.toFixed(1)+'g/s', xPx(lastT)-6, fPx(finalAvg)-5);
+      // Badge
+      const badge=document.getElementById('chartAvgBadge');
+      if(badge){ badge.style.display=''; badge.textContent='AVG '+finalAvg.toFixed(1)+'g/s'; }
+    }
+  }
+
+  // Weight line
+  ctx.setLineDash([]);
+  ctx.strokeStyle=shotSummary?'#e8c97a':'#e8c97a';
+  ctx.lineWidth=2.2;
+  ctx.shadowColor='rgba(232,201,122,0.5)'; ctx.shadowBlur=6;
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.beginPath();
+  chartData.forEach((d,i)=>{ i===0?ctx.moveTo(xPx(d.t),wPx(Math.max(0,d.w))):ctx.lineTo(xPx(d.t),wPx(Math.max(0,d.w))); });
+  ctx.stroke();
+  ctx.shadowBlur=0;
+
+  // Final dot
+  const last=chartData[chartData.length-1];
+  ctx.fillStyle='#e8c97a';
+  ctx.beginPath(); ctx.arc(xPx(last.t),wPx(Math.max(0,last.w)),4,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.9)';
+  ctx.font=`9px 'DM Mono',monospace`; ctx.textAlign='right';
+  ctx.fillText(last.w.toFixed(1)+'g', xPx(last.t)-8, wPx(Math.max(0,last.w))-6);
+
+  // Target yield line
+  if(brewDose&&brewTargetRatio){
+    const targetYield=brewDose*brewTargetRatio;
+    const ty=wPx(targetYield);
+    if(ty>=mt&&ty<=mt+ph){
+      ctx.setLineDash([3,5]);
+      ctx.strokeStyle='rgba(179,157,219,0.35)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(ml,ty); ctx.lineTo(ml+pw,ty); ctx.stroke();
+      ctx.fillStyle='rgba(179,157,219,0.5)'; ctx.font=`8px 'DM Mono',monospace`; ctx.textAlign='right';
+      ctx.fillText(targetYield.toFixed(0)+'g ←', ml+pw+34, ty+3);
+      ctx.setLineDash([]);
+    }
+  }
+}
+
+function saveChartImage(){
+  const canvas=document.getElementById('shotCanvas');
+  if(!canvas||chartData.length<2){ alert('No chart data available.'); return; }
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.width/dpr, H=canvas.height/dpr, padB=28;
+  const out=document.createElement('canvas');
+  out.width=W*dpr; out.height=(H+padB)*dpr;
+  const ctx=out.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.drawImage(canvas,0,0,W,H);
+  ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,H,W,padB);
+  const ts=new Date().toLocaleString('en-US',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  ctx.fillStyle='rgba(232,201,122,0.5)'; ctx.font=`bold 8px 'DM Mono',monospace`; ctx.textAlign='left'; ctx.fillText('Na8awi · POUR OVER', 8, H+17);
+  ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font=`8px 'DM Mono',monospace`; ctx.textAlign='right'; ctx.fillText(ts, W-8, H+17);
+  const link=document.createElement('a');
+  const d=new Date();
+  link.download=`pourover_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.png`;
+  link.href=out.toDataURL('image/png'); link.click();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HISTORY (localStorage)
+// ═══════════════════════════════════════════════════════════════
+const HISTORY_KEY='na8awi_history_v2';
+
+function loadHistory(){
+  try{ const v=localStorage.getItem(HISTORY_KEY); return v?JSON.parse(v):[]; }catch(e){ return []; }
+}
+function saveHistory(arr){
+  try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); return true; }
+  catch(e){ log('⚠ Failed to save history: storage full?','err'); return false; }
+}
+
+function saveSessionToHistory(){
+  if(!shotSummary) return;
+  const history=loadHistory();
+  const {score}=calcScore(shotSummary);
+  const entry={
+    id: Date.now().toString(),
+    date: new Date().toISOString(),
+    score,
+    recipe: shotSummary.recipe||'custom',
+    weight: shotSummary.weight,
+    time: shotSummary.time,
+    avgFlow: shotSummary.avgFlow,
+    peakFlow: shotSummary.peakFlow,
+    ratio: shotSummary.ratio,
+    dose: shotSummary.dose,
+    targetRatio: shotSummary.targetRatio,
+    temp: shotSummary.temp,
+    // Thin chartData: keep every 2nd point to halve storage, still enough for chart
+    chartData: (shotSummary.chartData||[]).filter((_,i)=>i%2===0).map(d=>({t:+d.t.toFixed(1),w:+d.w.toFixed(1),f:+d.f.toFixed(2)}))
+  };
+  history.unshift(entry);
+  if(history.length>50) history.length=50; // max 50 sessions
+  const ok=saveHistory(history);
+  const btn=document.getElementById('btnSaveSession');
+  if(ok){
+    btn.textContent='✓ SAVED';
+    btn.style.background='rgba(94,203,138,0.12)';
+    btn.style.borderColor='rgba(94,203,138,0.4)';
+    btn.style.color='var(--green)';
+    btn.disabled=true;
+    renderHistory();
+    log('Session saved to history.','ok');
+  } else {
+    btn.textContent='⚠ FAILED — try again';
+    btn.style.background='rgba(224,112,112,0.12)';
+    btn.style.borderColor='rgba(224,112,112,0.4)';
+    btn.style.color='var(--red)';
+    setTimeout(()=>{ btn.textContent='☕ SAVE TO HISTORY'; btn.style.background=''; btn.style.borderColor=''; btn.style.color=''; }, 2500);
+  }
+}
+
+function renderHistory(){
+  const history=loadHistory();
+  const list=document.getElementById('historyList');
+  const count=document.getElementById('historyCount');
+  const clearBtn=document.getElementById('btnClearHistory');
+  count.textContent=t('sessions',history.length);
+  clearBtn.style.display=history.length>0?'block':'none';
+
+  if(history.length===0){
+    list.innerHTML=`<div class="history-empty"><div class="history-empty-icon">☕</div><div class="history-empty-text">${t('history_empty')}</div></div>`;
+    return;
+  }
+
+  list.innerHTML='';
+  history.forEach(entry=>{
+    const card=document.createElement('div');
+    card.className='history-card';
+    const d=new Date(entry.date);
+    const dateStr=d.toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    const scoreColor=entry.score>=80?'var(--green)':entry.score>=60?'var(--accent)':'var(--red)';
+    const recipeLabel=(RECIPES.find(r=>r.id===entry.recipe)||{name:entry.recipe}).name||entry.recipe;
+    const timeFmt=entry.time<60?entry.time+'s':`${Math.floor(entry.time/60)}:${String(entry.time%60).padStart(2,'0')}`;
+    const scaGrade=entry.score>=90?'SCA GOLD':entry.score>=80?'SPECIALTY':entry.score>=70?'QUALITY':entry.score>=60?'STANDARD':entry.score>=45?'BELOW STD':'DEFECTIVE';
+    card.innerHTML=`
+      <div class="hc-top">
+        <div><div class="hc-date">${dateStr}</div><div class="hc-recipe">${recipeLabel}</div></div>
+        <div class="hc-score" style="color:${scoreColor}">${entry.score}</div>
+      </div>
+      <div class="hc-stats">
+        <div class="hc-stat"><div class="hc-stat-val" style="color:var(--accent)">${entry.weight.toFixed(1)}</div>${t('hc_yield')}</div></div>
+        <div class="hc-stat"><div class="hc-stat-val" style="color:var(--green)">${timeFmt}</div><div class="hc-stat-lbl">${t('hc_time')}</div></div>
+        <div class="hc-stat"><div class="hc-stat-val" style="color:var(--blue)">${entry.avgFlow.toFixed(1)}</div><div class="hc-stat-lbl">${t('hc_flow')}</div></div>
+        ${entry.ratio?`<div class="hc-stat"><div class="hc-stat-val" style="color:var(--purple)">1:${entry.ratio.toFixed(1)}</div><div class="hc-stat-lbl">${t('hc_ratio')}</div></div>`:''}
+      </div>
+      <div class="hc-verdict">${entry.score>=90?t('v90'):entry.score>=80?t('v80'):entry.score>=70?t('v70'):entry.score>=60?t('v60'):t('vlow',scaGrade)}</div>
+    `;
+    card.onclick=()=>openHistoryModal(entry);
+    list.appendChild(card);
+  });
+}
+
+function openHistoryModal(entry){
+  currentHistoryId=entry.id;
+  const d=new Date(entry.date);
+  const dateStr=d.toLocaleDateString('en-US',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' · '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const recipeLabel=(RECIPES.find(r=>r.id===entry.recipe)||{name:entry.recipe}).name||entry.recipe;
+  document.getElementById('modalTitle').textContent=`${recipeLabel} · ${dateStr}`;
+
+  const {score,notes,grade,gradeColor}=calcScore(entry);
+  const scoreColor=score>=80?'var(--green)':score>=60?'var(--accent)':'var(--red)';
+  const timeFmt=entry.time<60?entry.time+'s':`${Math.floor(entry.time/60)}:${String(entry.time%60).padStart(2,'0')}`;
+
+  document.getElementById('modalStats').innerHTML=`
+    <div class="modal-stat-card"><div class="msc-label">${t('modal_yield')}</div><div class="msc-val" style="color:var(--accent)">${entry.weight.toFixed(1)}</div><div class="msc-unit">${t('modal_gram')}</div></div>
+    <div class="modal-stat-card"><div class="msc-label">${t('modal_time')}</div><div class="msc-val" style="color:var(--green)">${timeFmt}</div><div class="msc-unit">${t('modal_total')}</div></div>
+    <div class="modal-stat-card"><div class="msc-label">${t('modal_avgflow')}</div><div class="msc-val" style="color:var(--blue)">${entry.avgFlow.toFixed(2)}</div><div class="msc-unit">g/s</div></div>
+    <div class="modal-stat-card"><div class="msc-label">${t('modal_peakflow')}</div><div class="msc-val" style="color:var(--purple)">${entry.peakFlow.toFixed(2)}</div><div class="msc-unit">g/s</div></div>
+    ${entry.ratio?`<div class="modal-stat-card"><div class="msc-label">${t('modal_brewratio')}</div><div class="msc-val" style="color:var(--text)">1:${entry.ratio.toFixed(1)}</div><div class="msc-unit">ratio</div></div>`:''}
+    <div class="modal-stat-card"><div class="msc-label">${t('modal_score')}</div><div class="msc-val" style="color:${scoreColor}">${score}</div><div class="msc-unit">/ 100</div></div>
+  `;
+
+  const paramRows=[];
+  if(entry.dose) paramRows.push(`Dose: ${entry.dose}g`);
+  if(entry.temp) paramRows.push(`Temp: ${entry.temp}°C`);
+  if(entry.targetRatio) paramRows.push(`Target 1:${entry.targetRatio}`);
+
+  document.getElementById('modalNotes').innerHTML=`
+    ${paramRows.length?`<div style="font-family:var(--mono);font-size:8px;color:var(--text-muted);letter-spacing:1.5px;margin-bottom:8px;">${paramRows.join(' · ')}</div><div style="font-family:var(--mono);font-size:7px;color:var(--text-muted);letter-spacing:1.5px;margin-bottom:8px;">SCA POUR OVER SCORECARD · ${grade||''}</div>`:''}
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      ${notes.map(n=>`<div style="font-family:var(--mono);font-size:8px;color:var(--text-dim);line-height:1.6;padding:5px 7px;background:rgba(255,255,255,0.02);border-radius:5px;border-left:2px solid rgba(255,255,255,0.1);">${n}</div>`).join('')}
+    </div>
+  `;
+
+  document.getElementById('modalDelBtn').onclick=()=>deleteSession(entry.id);
+  document.getElementById('historyModal').classList.add('open');
+  // Render chart after modal is visible so canvas has dimensions
+  requestAnimationFrame(()=>renderModalChart(entry));
+}
+
+function renderModalChart(entry){
+  const canvas=document.getElementById('modalCanvas');
+  const wrap=document.getElementById('modalChartWrap');
+  if(!canvas||!wrap) return;
+  const cd=entry.chartData||[];
+  if(cd.length<3){
+    canvas.style.display='none';
+    const existing=wrap.querySelector('.modal-chart-no-data');
+    if(!existing){ const nd=document.createElement('div'); nd.className='modal-chart-no-data'; nd.textContent='NO CHART DATA'; wrap.appendChild(nd); }
+    return;
+  }
+  canvas.style.display='block';
+
+  const dpr=window.devicePixelRatio||1;
+  const cssW=canvas.parentElement.clientWidth||320;
+  const cssH=140;
+  canvas.width=cssW*dpr; canvas.height=cssH*dpr;
+  canvas.style.width=cssW+'px'; canvas.style.height=cssH+'px';
+
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const W=cssW, H=cssH;
+  ctx.fillStyle='#0a0a0a';
+  ctx.fillRect(0,0,W,H);
+
+  const ml=6, mr=6, mt=8, mb=16;
+  const pw=W-ml-mr, ph=H-mt-mb;
+  const tMax=Math.max(60, cd[cd.length-1].t+5);
+  const wMax=Math.ceil(Math.max(10,...cd.map(d=>Math.max(0,d.w)))/10)*10*1.1;
+  const fMax=Math.ceil(Math.max(2,...cd.map(d=>d.f))/2)*2*1.15;
+  const xPx=t=>ml+(t/tMax)*pw;
+  const wPx=w=>mt+ph-(Math.max(0,w)/wMax)*ph;
+  const fPx=f=>mt+ph-(Math.max(0,f)/fMax)*ph;
+
+  // Subtle grid lines
+  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1; ctx.setLineDash([]);
+  for(let i=1;i<4;i++){
+    const y=mt+(ph/4)*i;
+    ctx.beginPath(); ctx.moveTo(ml,y); ctx.lineTo(ml+pw,y); ctx.stroke();
+  }
+  // X axis time labels
+  ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font=`7px 'DM Mono',monospace`; ctx.textAlign='center';
+  const xStep=tMax<=90?30:tMax<=180?60:120;
+  for(let t=xStep;t<tMax;t+=xStep){
+    ctx.fillText(t<60?t+'s':`${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`, xPx(t), mt+ph+12);
+  }
+
+  // Gaussian smooth for flow
+  function gSmooth(data,key){
+    const k=[0.0625,0.25,0.375,0.25,0.0625]; const r=2;
+    return data.map((_,i)=>{
+      let sum=0,w=0;
+      for(let j=-r;j<=r;j++){ const idx=i+j; if(idx<0||idx>=data.length) continue; const kw=k[j+r]; sum+=data[idx][key]*kw; w+=kw; }
+      return w>0?sum/w:data[i][key];
+    });
+  }
+  const sf=gSmooth(cd,'f');
+
+  // Flow area
+  ctx.beginPath();
+  ctx.moveTo(xPx(cd[0].t), fPx(sf[0]));
+  cd.forEach((d,i)=>ctx.lineTo(xPx(d.t), fPx(sf[i])));
+  ctx.lineTo(xPx(cd[cd.length-1].t),mt+ph); ctx.lineTo(xPx(cd[0].t),mt+ph); ctx.closePath();
+  const fg=ctx.createLinearGradient(0,mt,0,mt+ph);
+  fg.addColorStop(0,'rgba(126,200,232,0.12)'); fg.addColorStop(1,'rgba(126,200,232,0.01)');
+  ctx.fillStyle=fg; ctx.setLineDash([]); ctx.fill();
+
+  // Yield area
+  ctx.beginPath();
+  ctx.moveTo(xPx(cd[0].t), wPx(cd[0].w));
+  cd.forEach(d=>ctx.lineTo(xPx(d.t), wPx(d.w)));
+  ctx.lineTo(xPx(cd[cd.length-1].t),mt+ph); ctx.lineTo(xPx(cd[0].t),mt+ph); ctx.closePath();
+  const wg=ctx.createLinearGradient(0,mt,0,mt+ph);
+  wg.addColorStop(0,'rgba(232,201,122,0.14)'); wg.addColorStop(1,'rgba(232,201,122,0.01)');
+  ctx.fillStyle=wg; ctx.fill();
+
+  // Flow line (smooth bezier)
+  ctx.setLineDash([]); ctx.strokeStyle='#7ec8e8'; ctx.lineWidth=1.6;
+  ctx.shadowColor='rgba(126,200,232,0.35)'; ctx.shadowBlur=4;
+  ctx.beginPath(); ctx.moveTo(xPx(cd[0].t),fPx(sf[0]));
+  for(let i=1;i<cd.length;i++){
+    const x0=xPx(cd[i-1].t),y0=fPx(sf[i-1]),x1=xPx(cd[i].t),y1=fPx(sf[i]);
+    ctx.bezierCurveTo((x0+x1)/2,y0,(x0+x1)/2,y1,x1,y1);
+  }
+  ctx.stroke();
+  // Flow end dot + label
+  const lastF=cd[cd.length-1]; const lastSF=sf[sf.length-1];
+  ctx.fillStyle='#7ec8e8'; ctx.shadowColor='rgba(126,200,232,0.5)'; ctx.shadowBlur=5;
+  ctx.beginPath(); ctx.arc(xPx(lastF.t),fPx(lastSF),3,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(126,200,232,0.85)'; ctx.font=`bold 7px 'DM Mono',monospace`; ctx.textAlign='right';
+  ctx.fillText(lastSF.toFixed(1)+'g/s', xPx(lastF.t)-5, fPx(lastSF)-4);
+
+  // Yield line
+  ctx.shadowBlur=3; ctx.strokeStyle='#e8c97a'; ctx.lineWidth=2.0;
+  ctx.shadowColor='rgba(232,201,122,0.3)';
+  ctx.beginPath(); cd.forEach((d,i)=>{ i===0?ctx.moveTo(xPx(d.t),wPx(d.w)):ctx.lineTo(xPx(d.t),wPx(d.w)); });
+  ctx.stroke(); ctx.shadowBlur=0;
+
+  // Running average flow — styled like yield graph (area + line + dot + label)
+  {
+    let rSum=0, rCount=0;
+    const runAvg=cd.map(d=>{ if(d.f>0){rSum+=d.f;rCount++;} return rCount>0?rSum/rCount:0; });
+    const finalAvg=runAvg[runAvg.length-1];
+    if(rCount>0){
+      ctx.setLineDash([]);
+      // Area fill
+      ctx.beginPath();
+      ctx.moveTo(xPx(cd[0].t), fPx(runAvg[0]));
+      cd.forEach((d,i)=>ctx.lineTo(xPx(d.t), fPx(runAvg[i])));
+      ctx.lineTo(xPx(cd[cd.length-1].t), mt+ph);
+      ctx.lineTo(xPx(cd[0].t), mt+ph);
+      ctx.closePath();
+      const rGrad=ctx.createLinearGradient(0,mt,0,mt+ph);
+      rGrad.addColorStop(0,'rgba(179,157,219,0.13)'); rGrad.addColorStop(1,'rgba(179,157,219,0.01)');
+      ctx.fillStyle=rGrad; ctx.fill();
+      // Line
+      ctx.strokeStyle='#b39ddb'; ctx.lineWidth=1.4;
+      ctx.shadowColor='rgba(179,157,219,0.35)'; ctx.shadowBlur=3;
+      ctx.beginPath();
+      cd.forEach((d,i)=>{ i===0?ctx.moveTo(xPx(d.t),fPx(runAvg[i])):ctx.lineTo(xPx(d.t),fPx(runAvg[i])); });
+      ctx.stroke(); ctx.shadowBlur=0;
+      // End dot
+      const lastT=cd[cd.length-1].t;
+      ctx.fillStyle='#b39ddb'; ctx.shadowColor='rgba(179,157,219,0.5)'; ctx.shadowBlur=4;
+      ctx.beginPath(); ctx.arc(xPx(lastT),fPx(finalAvg),3,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+      // Label
+      ctx.fillStyle='rgba(179,157,219,0.8)'; ctx.font=`bold 7px 'DM Mono',monospace`; ctx.textAlign='right';
+      ctx.fillText('avg '+finalAvg.toFixed(1)+'g/s', xPx(lastT)-5, fPx(finalAvg)-4);
+    }
+  }
+
+  // Target yield line if ratio set
+  if(entry.dose&&entry.targetRatio){
+    const ty=wPx(entry.dose*entry.targetRatio);
+    ctx.setLineDash([2,5]); ctx.strokeStyle='rgba(179,157,219,0.3)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(ml,ty); ctx.lineTo(ml+pw,ty); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // End point dot
+  const last=cd[cd.length-1];
+  ctx.fillStyle='#e8c97a'; ctx.shadowColor='rgba(232,201,122,0.6)'; ctx.shadowBlur=6;
+  ctx.beginPath(); ctx.arc(xPx(last.t),wPx(last.w),3.5,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+  // Yield label at end
+  ctx.fillStyle='rgba(232,201,122,0.8)'; ctx.font=`bold 8px 'DM Mono',monospace`; ctx.textAlign='right';
+  ctx.fillText(last.w.toFixed(1)+'g', xPx(last.t)-6, wPx(last.w)-5);
+}
+
+function closeModal(e){
+  if(e.target===document.getElementById('historyModal')||e.target.classList.contains('modal-overlay')) document.getElementById('historyModal').classList.remove('open');
+}
+
+function deleteSession(id){
+  if(!confirm('Delete this session?')) return;
+  const history=loadHistory().filter(e=>e.id!==id);
+  saveHistory(history);
+  renderHistory();
+  document.getElementById('historyModal').classList.remove('open');
+}
+
+function clearHistory(){
+  if(!confirm('Clear all history? This cannot be undone.')) return;
+  try{ localStorage.removeItem(HISTORY_KEY); }catch(e){}
+  renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MISC
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('resize', ()=>{ if(chartData.length>0){ chartDirty=true; if(!chartRAF) chartRAF=requestAnimationFrame(renderChart); } });
+</script>
+
+<!-- ═══ PWA Service Worker Registration ═══ -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(reg => {
+        console.log('[Eugenix PWA] Service Worker registered ✓', reg.scope);
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[Eugenix PWA] New version available — reload to update');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[Eugenix PWA] SW registration failed:', err));
+  });
+}
+window.addEventListener('appinstalled', () => {
+  console.log('[Eugenix PWA] App installed successfully ✓');
+});
+</script>
+</body>
+</html>

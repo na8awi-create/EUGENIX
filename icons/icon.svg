@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Dark background with rounded corners -->
+  <rect width="512" height="512" rx="108" fill="#0e0e0e"/>
+  <!-- Subtle gold border -->
+  <rect width="512" height="512" rx="108" fill="none" stroke="#e8c97a" stroke-width="3" stroke-opacity="0.35"/>
+
+  <!-- ═══ LETTER E ═══ -->
+  <!-- Vertical spine -->
+  <rect x="62" y="118" width="30" height="248" fill="#e8c97a"/>
+  <!-- Top bar -->
+  <rect x="62" y="118" width="136" height="28" fill="#e8c97a"/>
+  <!-- Middle bar -->
+  <rect x="62" y="234" width="112" height="24" fill="#e8c97a"/>
+  <!-- Bottom bar -->
+  <rect x="62" y="338" width="136" height="28" fill="#e8c97a"/>
+
+  <!-- ═══ LETTER U with PEN NIB ═══ -->
+  <!-- Left pillar of U -->
+  <rect x="248" y="118" width="32" height="210" fill="#e8c97a"/>
+  <!-- Right pillar of U -->
+  <rect x="420" y="118" width="32" height="210" fill="#e8c97a"/>
+  <!-- Nib triangle: two pillars converge to a point -->
+  <polygon points="248,308 452,308 350,410" fill="#e8c97a"/>
+  <!-- Ink drop below nib tip -->
+  <ellipse cx="350" cy="426" rx="9" ry="13" fill="#e8c97a"/>
+
+  <!-- ═══ HOOK / PEN CLIP arc above U ═══ -->
+  <!-- Curved arc starting from between the pillars, going up then right looping back -->
+  <path d="M 350 122 C 350 50, 450 50, 455 105"
+        fill="none"
+        stroke="#e8c97a"
+        stroke-width="22"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>
