@@ -1,1 +1,9 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.eugenixlab.magicpourover",
+        "sha256_cert_fingerprints": ["52:D9:FD:8E:CC:CF:23:53:21:E6:39:27:2B:C6:BD:DE:B2:24:D6:56:2C:62:64:7C:E6:6A:60:24:5B:39:A0:99"]
+      }
+    }]
 
